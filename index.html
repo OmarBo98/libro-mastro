@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Libro Mastro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E7E9DC;
+    --paper-card:#FBFBF4;
+    --ink:#1E2A22;
+    --ink-soft:#5C6B60;
+    --ink-faint:#93A092;
+    --income:#1F6F54;
+    --income-soft:#E4EFE9;
+    --expense:#A83E2C;
+    --expense-soft:#F3E6E1;
+    --line:#C9CBB8;
+    --gold:#B8973E;
+    --gold-soft:#F1E9D4;
+    --danger:#A83E2C;
+    --shadow:0 2px 14px rgba(30,42,34,0.10);
+    --radius:16px;
+    --radius-sm:10px;
+    --font-display:'Space Grotesk',sans-serif;
+    --font-mono:'IBM Plex Mono',monospace;
+    --font-body:'IBM Plex Sans',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    font-family:var(--font-body);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  #app{
+    max-width:520px;
+    margin:0 auto;
+    min-height:100vh;
+    background:var(--paper-card);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    box-shadow:var(--shadow);
+  }
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
+
+  /* ---------- Header ---------- */
+  .app-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 20px 10px;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:40px;height:40px;border-radius:50%;
+    border:2px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-display);font-weight:700;font-size:18px;
+    transform:rotate(-6deg);
+    flex-shrink:0;
+  }
+  .brand h1{font-family:var(--font-display);font-size:20px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .brand-sub{font-size:11px;color:var(--ink-soft);margin:1px 0 0;text-transform:uppercase;letter-spacing:.08em;}
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%;
+    border:1px solid var(--line);background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;color:var(--ink-soft);
+    transition:background .15s;
+  }
+  .icon-btn:hover{background:var(--paper);}
+
+  /* ---------- Pages / layout ---------- */
+  main{flex:1;padding:4px 20px 110px;}
+  .page.hidden{display:none;}
+
+  /* ---------- Balance card ---------- */
+  .balance-card{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-top:2px dashed var(--line);
+    border-radius:var(--radius);
+    padding:18px 20px 16px;
+    margin:14px 0 18px;
+    animation:riseIn .5s ease both;
+  }
+  @keyframes riseIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .balance-row{display:flex;gap:14px;}
+  .balance-item{flex:1;display:flex;flex-direction:column;gap:2px;}
+  .balance-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);}
+  .balance-value{font-family:var(--font-mono);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;}
+  .balance-item.income .balance-value{color:var(--income);}
+  .balance-item.expense .balance-value{color:var(--expense);}
+  .balance-divider{height:1px;background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px);margin:14px 0;}
+  .balance-total .balance-value{font-size:26px;font-weight:600;}
+
+  /* ---------- Action buttons ---------- */
+  .action-row{display:flex;gap:10px;margin-bottom:22px;}
+  .action-btn{
+    flex:1;
+    border:none;border-radius:var(--radius-sm);
+    padding:13px 10px;
+    font-family:var(--font-display);font-weight:700;font-size:14px;
+    color:#fff;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    transition:transform .1s;
+  }
+  .action-btn:active{transform:scale(.97);}
+  .expense-btn{background:var(--expense);}
+  .income-btn{background:var(--income);}
+
+  /* ---------- Sections ---------- */
+  section.block{margin-bottom:24px;}
+  section.block h2{
+    font-family:var(--font-display);font-size:14px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ink-soft);
+    margin:0 0 10px;
+  }
+  .empty-state{
+    border:1px dashed var(--line);border-radius:var(--radius-sm);
+    padding:22px 16px;text-align:center;color:var(--ink-soft);font-size:13px;
+  }
+
+  /* recurring list */
+  .rec-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 0;border-bottom:1px dashed var(--line);
+    gap:10px;
+  }
+  .rec-item:last-child{border-bottom:none;}
+  .rec-main{display:flex;align-items:center;gap:10px;min-width:0;}
+  .cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .rec-text{min-width:0;}
+  .rec-cat{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .rec-meta{font-size:11.5px;color:var(--ink-soft);}
+  .rec-amount{font-family:var(--font-mono);font-size:13.5px;color:var(--expense);white-space:nowrap;}
+  .stop-btn{
+    background:none;border:1px solid var(--line);border-radius:50%;
+    width:26px;height:26px;flex-shrink:0;color:var(--ink-soft);font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .stop-btn:hover{border-color:var(--expense);color:var(--expense);}
+
+  /* transaction tape */
+  .tx-month-label{
+    font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);
+    text-transform:uppercase;letter-spacing:.06em;
+    margin:14px 0 6px;
+  }
+  .tx-month-label:first-child{margin-top:0;}
+  .tx-item{
+    padding:11px 0;border-bottom:1px dashed var(--line);
+  }
+  .tx-item:last-child{border-bottom:none;}
+  .tx-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .tx-cat{display:flex;align-items:center;gap:8px;min-width:0;font-size:14px;font-weight:500;}
+  .tx-cat span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .tx-amount{font-family:var(--font-mono);font-size:14.5px;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .tx-amount.income{color:var(--income);}
+  .tx-amount.expense{color:var(--expense);}
+  .tx-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:3px;}
+  .tx-sub{font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .badge{
+    font-size:10px;padding:1px 6px;border-radius:20px;
+    background:var(--paper);color:var(--ink-soft);border:1px solid var(--line);
+  }
+  .tx-del{
+    background:none;border:none;color:var(--ink-faint);font-size:15px;
+    width:24px;height:24px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .tx-del:hover{color:var(--expense);}
+  .tx-note{font-size:12px;color:var(--ink-soft);font-style:italic;margin-top:4px;line-height:1.4;}
+
+  /* ---------- Bottom nav ---------- */
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;
+    max-width:520px;margin:0 auto;
+    background:var(--paper-card);
+    border-top:1px solid var(--line);
+    display:flex;
+    padding:8px 12px calc(10px + env(safe-area-inset-bottom));
+    gap:6px;
+  }
+  .nav-btn{
+    flex:1;background:none;border:none;border-radius:var(--radius-sm);
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:7px 4px;color:var(--ink-faint);font-size:11px;font-weight:500;
+    transition:background .15s,color .15s;
+  }
+  .nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;}
+  .nav-btn.active{color:var(--ink);background:var(--gold-soft);}
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(30,42,34,.42);
+    display:flex;align-items:flex-end;justify-content:center;
+    z-index:100;
+  }
+  .modal-overlay.hidden{display:none;}
+  .modal-sheet{
+    width:100%;max-width:520px;background:var(--paper-card);
+    border-radius:22px 22px 0 0;
+    padding:10px 22px 26px;
+    max-height:88vh;overflow-y:auto;
+    animation:slideUp .28s cubic-bezier(.2,.8,.3,1) both;
+  }
+  @keyframes slideUp{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .modal-handle{width:38px;height:4px;background:var(--line);border-radius:4px;margin:6px auto 14px;}
+  .modal-sheet h2{font-family:var(--font-display);font-size:18px;margin:0 0 16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;}
+  .field input[type=number],.field input[type=date],.field select{
+    width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:#fff;font-size:15px;color:var(--ink);
+  }
+  .field input:focus,.field select:focus{border-color:var(--gold);}
+  .switch-row{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:4px 0;cursor:pointer;
+  }
+  .switch-row span:first-child{font-size:14px;font-weight:500;}
+  .switch{position:relative;width:42px;height:25px;flex-shrink:0;}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
+  .switch-slider{
+    position:absolute;inset:0;background:var(--line);border-radius:20px;
+    transition:background .15s;
+  }
+  .switch-slider::before{
+    content:'';position:absolute;width:19px;height:19px;left:3px;top:3px;
+    background:#fff;border-radius:50%;transition:transform .15s;
+    box-shadow:0 1px 3px rgba(0,0,0,.25);
+  }
+  .switch input:checked + .switch-slider{background:var(--income);}
+  .switch input:checked + .switch-slider::before{transform:translateX(17px);}
+  .hint{font-size:12px;color:var(--ink-soft);margin:6px 2px 0;line-height:1.5;}
+  .form-error{font-size:12.5px;color:var(--expense);margin:2px 0 10px;}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;}
+  .btn-ghost,.btn-solid{
+    flex:1;padding:12px;border-radius:var(--radius-sm);font-weight:600;font-size:14px;
+    border:1px solid var(--line);background:transparent;color:var(--ink);
+  }
+  .btn-solid{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .btn-solid.btn-danger{background:var(--expense);border-color:var(--expense);}
+
+  .confirm-sheet{
+    width:100%;max-width:420px;background:var(--paper-card);
+    border-radius:18px;padding:22px;margin:0 20px;
+    animation:slideUp .2s ease both;
+  }
+  #confirmOverlay{align-items:center;}
+  #confirmMessage{font-size:14.5px;line-height:1.55;margin:0 0 4px;}
+
+  /* ---------- Charts page ---------- */
+  .page-title{font-family:var(--font-display);font-size:19px;font-weight:700;margin:14px 0 4px;}
+  .page-note{font-size:12.5px;color:var(--ink-soft);margin:0 0 20px;}
+  .chart-block{margin-bottom:30px;}
+  .chart-block h3{font-family:var(--font-display);font-size:14px;font-weight:700;margin:0 0 4px;}
+  .chart-total{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-soft);margin:0 0 14px;}
+  .chart-wrap{display:flex;justify-content:center;margin-bottom:16px;}
+  .donut-center-label{font-family:var(--font-display);font-size:13px;font-weight:700;}
+  .legend{display:flex;flex-direction:column;gap:9px;}
+  .legend-row{display:flex;align-items:center;gap:9px;font-size:13px;}
+  .legend-dot{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+  .legend-cat{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .legend-pct{font-family:var(--font-mono);font-weight:600;width:44px;text-align:right;flex-shrink:0;}
+  .legend-val{font-family:var(--font-mono);color:var(--ink-soft);width:78px;text-align:right;flex-shrink:0;font-size:12px;}
+
+  #loadingOverlay{
+    position:fixed;inset:0;background:var(--paper);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:12px;z-index:200;
+  }
+  .load-mark{
+    width:46px;height:46px;border-radius:50%;border:2px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;font-family:var(--font-display);
+    font-weight:700;animation:spin 1.1s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loadingOverlay p{font-size:13px;color:var(--ink-soft);}
+
+  .account-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:15px 0;border-bottom:1px dashed var(--line);
+  }
+  .account-item:last-child{border-bottom:none;}
+  .account-name{font-size:14.5px;font-weight:600;}
+  .account-balance{font-family:var(--font-mono);font-size:16.5px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .edit-btn{
+    background:none;border:1px solid var(--line);border-radius:50%;
+    width:30px;height:30px;flex-shrink:0;color:var(--ink-soft);font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .edit-btn:hover{border-color:var(--gold);color:var(--ink);}
+
+  .settings-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+  .settings-item{
+    display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+    padding:12px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);
+    background:transparent;color:var(--ink);cursor:pointer;
+  }
+  .settings-item-icon{
+    width:34px;height:34px;border-radius:50%;background:var(--paper);
+    display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+  }
+  .settings-item-title{display:block;font-size:14px;font-weight:600;}
+  .settings-item-sub{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:2px;line-height:1.4;}
+  .settings-item.danger .settings-item-title{color:var(--expense);}
+
+  .toast{
+    position:fixed;left:50%;bottom:82px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;
+    font-size:12.5px;z-index:150;max-width:88%;text-align:center;
+    box-shadow:var(--shadow);
+  }
+  .toast.hidden{display:none;}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:0.001s !important;transition-duration:0.001s !important;}
+  }
+  .sync-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    margin:0 20px 4px;padding:9px 12px;border:1px dashed var(--line);border-radius:var(--radius-sm);
+    font-size:12px;color:var(--ink-soft);
+  }
+  .sync-bar .sync-text{min-width:0;overflow-wrap:anywhere;}
+  .sync-bar .sync-text b{color:var(--ink);font-weight:600;}
+  .sync-actions{display:flex;gap:8px;}
+  .sync-btn{
+    border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:20px;
+    padding:6px 12px;font-size:12px;font-weight:600;
+  }
+  .sync-btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);}
+</style>
+</head>
+<body>
+
+<div id="loadingOverlay"><div class="load-mark">€</div><p>Apertura del registro…</p></div>
+
+<div id="app" style="display:none;">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">€</div>
+      <div>
+        <h1>Libro Mastro</h1>
+        <p class="brand-sub">registro personale</p>
+      </div>
+    </div>
+    <button class="icon-btn" id="btnSettings" aria-label="Impostazioni">⚙</button>
+  </header>
+
+  <div class="sync-bar" id="syncBar">
+    <span class="sync-text" id="syncText"></span>
+    <span class="sync-actions">
+      <button class="sync-btn" id="btnGoogleIn" type="button">Accedi con Google</button>
+      <button class="sync-btn ghost" id="btnGoogleOut" type="button">Esci</button>
+    </span>
+  </div>
+
+  <main>
+    <div class="page" id="page-dashboard">
+      <section class="balance-card" id="balanceCard">
+        <div class="balance-row">
+          <div class="balance-item income">
+            <span class="balance-label">Entrate</span>
+            <span class="balance-value" id="totalIncomeVal">€0,00</span>
+          </div>
+          <div class="balance-item expense">
+            <span class="balance-label">Uscite</span>
+            <span class="balance-value" id="totalExpenseVal">€0,00</span>
+          </div>
+        </div>
+        <div class="balance-divider"></div>
+        <div class="balance-item balance-total">
+          <span class="balance-label">Saldo</span>
+          <span class="balance-value" id="balanceVal">€0,00</span>
+        </div>
+      </section>
+
+      <div class="action-row">
+        <button class="action-btn expense-btn" id="btnAddExpense">＋ Aggiungi spesa</button>
+        <button class="action-btn income-btn" id="btnAddIncome">＋ Aggiungi entrata</button>
+      </div>
+
+      <section class="block" id="recurringSection" style="display:none;">
+        <h2>Spese ricorrenti</h2>
+        <div id="recurringList"></div>
+      </section>
+
+      <section class="block">
+        <h2>Movimenti</h2>
+        <div id="txList"><div class="empty-state">Nessun movimento ancora.<br>Aggiungi la tua prima spesa o entrata.</div></div>
+      </section>
+    </div>
+
+    <div class="page hidden" id="page-charts">
+      <h2 class="page-title">Analisi in percentuale</h2>
+      <p class="page-note">Come si distribuiscono le tue entrate e uscite tra le categorie.</p>
+
+      <div class="chart-block">
+        <h3>Uscite per categoria</h3>
+        <p class="chart-total" id="expenseChartTotal">Totale: €0,00</p>
+        <div class="chart-wrap" id="expenseChartWrap"></div>
+        <div class="legend" id="expenseLegend"></div>
+      </div>
+
+      <div class="chart-block">
+        <h3>Entrate per categoria</h3>
+        <p class="chart-total" id="incomeChartTotal">Totale: €0,00</p>
+        <div class="chart-wrap" id="incomeChartWrap"></div>
+        <div class="legend" id="incomeLegend"></div>
+      </div>
+    </div>
+
+    <div class="page hidden" id="page-patrimonio">
+      <h2 class="page-title">Situazione patrimoniale</h2>
+      <p class="page-note">Il saldo di ogni conto si aggiorna da solo in base alle spese e alle entrate che registri. Tocca ✎ per allineare un saldo al valore reale (es. la prima volta che usi l'app).</p>
+
+      <section class="balance-card" style="margin-bottom:18px;">
+        <div class="balance-item balance-total" style="align-items:flex-start;">
+          <span class="balance-label">Patrimonio totale</span>
+          <span class="balance-value" id="patrimonioTotalVal">€0,00</span>
+        </div>
+      </section>
+
+      <div id="accountsList"></div>
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-page="dashboard">
+      <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M8 4v5"/></svg>
+      Portafoglio
+    </button>
+    <button class="nav-btn" data-page="charts">
+      <svg viewBox="0 0 24 24" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l7 4"/></svg>
+      Grafici
+    </button>
+    <button class="nav-btn" data-page="patrimonio">
+      <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M2 10.5h20"/><circle cx="17" cy="14.5" r="1.3" fill="currentColor" stroke="none"/></svg>
+      Patrimonio
+    </button>
+  </nav>
+</div>
+
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-handle"></div>
+    <h2 id="modalTitle">Aggiungi spesa</h2>
+
+    <div class="field">
+      <label for="inputAmount">Importo (€)</label>
+      <input type="number" id="inputAmount" inputmode="decimal" step="0.01" min="0" placeholder="0.00">
+    </div>
+    <div class="field">
+      <label for="inputCategory">Categoria</label>
+      <select id="inputCategory"></select>
+    </div>
+    <div class="field">
+      <label for="inputAccount">Conto</label>
+      <select id="inputAccount"></select>
+    </div>
+    <div class="field">
+      <label for="inputDate">Data</label>
+      <input type="date" id="inputDate">
+    </div>
+
+    <div class="field" id="noteField">
+      <label for="inputNote">Note (facoltativo)</label>
+      <input type="text" id="inputNote" maxlength="140" placeholder="Es. cena di compleanno, tagliando auto...">
+    </div>
+
+    <div class="field" id="sharedRow">
+      <label class="switch-row">
+        <span>Spesa condivisa</span>
+        <span class="switch"><input type="checkbox" id="toggleShared"><span class="switch-slider"></span></span>
+      </label>
+    </div>
+    <div class="field" id="peopleCountField" style="display:none">
+      <label for="inputPeopleCount">Tra quante persone viene divisa?</label>
+      <input type="number" id="inputPeopleCount" min="2" step="1" value="2">
+      <p class="hint" id="shareHint"></p>
+    </div>
+
+    <div class="field" id="recurringRow">
+      <label class="switch-row">
+        <span>Spesa ricorrente</span>
+        <span class="switch"><input type="checkbox" id="toggleRecurring"><span class="switch-slider"></span></span>
+      </label>
+      <p class="hint" id="recurringHint" style="display:none"></p>
+    </div>
+
+    <p class="form-error" id="formError" style="display:none"></p>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" id="btnCancel">Annulla</button>
+      <button class="btn-solid" id="btnSave">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="accountEditOverlay">
+  <div class="confirm-sheet">
+    <h2 id="accountEditTitle" style="font-family:var(--font-display);font-size:16px;margin:0 0 16px;">Aggiorna saldo</h2>
+    <div class="field">
+      <label for="inputAccountBalance">Saldo attuale (€)</label>
+      <input type="number" id="inputAccountBalance" step="0.01">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="accountEditCancel">Annulla</button>
+      <button class="btn-solid" id="accountEditSave">Salva</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="confirmOverlay">
+  <div class="confirm-sheet">
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="confirmCancel">Annulla</button>
+      <button class="btn-solid btn-danger" id="confirmOk">Conferma</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="settingsOverlay">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h2>Impostazioni</h2>
+    <div class="settings-list">
+      <button class="settings-item" id="btnExport">
+        <span class="settings-item-icon">⭳</span>
+        <span>
+          <span class="settings-item-title">Esporta backup</span>
+          <span class="settings-item-sub">Scarica un file con tutti i tuoi dati, da spostare nella cartella di Google Drive</span>
+        </span>
+      </button>
+      <label class="settings-item" for="importFileInput" id="btnImport">
+        <span class="settings-item-icon">⭱</span>
+        <span>
+          <span class="settings-item-title">Importa backup</span>
+          <span class="settings-item-sub">Ripristina i dati da un file di backup esportato in precedenza</span>
+        </span>
+      </label>
+      <button class="settings-item danger" id="btnResetData">
+        <span class="settings-item-icon">🗑</span>
+        <span>
+          <span class="settings-item-title">Cancella tutti i dati</span>
+          <span class="settings-item-sub">Azione irreversibile</span>
+        </span>
+      </button>
+    </div>
+    <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">
+    <div class="modal-actions">
+      <button class="btn-ghost" id="btnSettingsClose" style="flex:none;width:100%;">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script>
+(function(){
+
+  var EXPENSE_CATEGORIES = ['Groceries','Cibo fuori','Abbigliamento','Svago e Sport','Articoli per la casa','Affitto','Utenze','Regali e cose offerte','Contribuzioni','Viaggi','Parcheggi','Benzina','Costi dell\'auto','Imprevisti','Abbonamenti','Salute'];
+  var INCOME_CATEGORIES = ['Stipendio','Roy','Trading'];
+  var ACCOUNTS = ['BCC','BBVA','Contanti','Arangio','Traderepublic','Wise','PuPrime','Revolut','Amex'];
+  var CATEGORY_COLORS = {
+    'Groceries':'#1F6F54','Cibo fuori':'#A83E2C','Abbigliamento':'#B8973E','Svago e Sport':'#3E6B8A',
+    'Articoli per la casa':'#7C5C3E','Affitto':'#5C4A78','Utenze':'#2F8F8F','Regali e cose offerte':'#C97A3D',
+    'Contribuzioni':'#6B7F3E','Viaggi':'#4A5A4F','Parcheggi':'#8A4A6B','Benzina':'#B0533E','Costi dell\'auto':'#2F3E6B',
+    'Imprevisti':'#55524A','Abbonamenti':'#8A6BA8','Salute':'#C0546E',
+    'Stipendio':'#1F6F54','Roy':'#B8973E','Trading':'#3E6B8A'
+  };
+
+  var state = { transactions: [], recurring: [], accounts: {} };
+  var currentModalType = 'expense';
+  var pendingConfirmAction = null;
+  var editingAccount = null;
+
+  var toastTimer = null;
+  function showToast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.add('hidden'); }, 3800);
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function uid(){ return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2,8); }
+  function pad(n){ return String(n).padStart(2,'0'); }
+  function monthKey(y,m){ return y + '-' + pad(m); }
+  function addMonth(y,m){ m += 1; if(m>12){m=1;y+=1;} return {y:y,m:m}; }
+  function fmtEUR(n){ return new Intl.NumberFormat('it-IT',{style:'currency',currency:'EUR'}).format(n||0); }
+  function fmtDateIt(dateStr){
+    var d = new Date(dateStr+'T00:00:00');
+    var s = d.toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'});
+    return s;
+  }
+  function monthLabel(key){
+    var parts = key.split('-'); var y = parseInt(parts[0],10); var m = parseInt(parts[1],10);
+    var d = new Date(y, m-1, 1);
+    var s = d.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+    return s.charAt(0).toUpperCase()+s.slice(1);
+  }
+  function ymOf(d){ return monthKey(d.getFullYear(), d.getMonth()+1); }
+
+  /* ---------- storage (localStorage del browser: i dati restano su questo dispositivo/Chrome) ---------- */
+  async function loadData(){
+    try{
+      var raw = localStorage.getItem('ft:transactions');
+      state.transactions = raw ? JSON.parse(raw) : [];
+    }catch(e){ state.transactions = []; }
+    try{
+      var raw2 = localStorage.getItem('ft:recurring');
+      state.recurring = raw2 ? JSON.parse(raw2) : [];
+    }catch(e){ state.recurring = []; }
+    try{
+      var raw3 = localStorage.getItem('ft:accounts');
+      state.accounts = raw3 ? JSON.parse(raw3) : {};
+    }catch(e){ state.accounts = {}; }
+    ACCOUNTS.forEach(function(a){ if(typeof state.accounts[a] !== 'number') state.accounts[a] = 0; });
+  }
+  async function saveTransactions(){
+    try{ localStorage.setItem('ft:transactions', JSON.stringify(state.transactions)); scheduleCloudSave(); }
+    catch(e){ console.error('save tx failed', e); showToast('Impossibile salvare: memoria del browser piena o non disponibile.'); }
+  }
+  async function saveRecurring(){
+    try{ localStorage.setItem('ft:recurring', JSON.stringify(state.recurring)); scheduleCloudSave(); }
+    catch(e){ console.error('save recurring failed', e); showToast('Impossibile salvare: memoria del browser piena o non disponibile.'); }
+  }
+  async function saveAccounts(){
+    try{ localStorage.setItem('ft:accounts', JSON.stringify(state.accounts)); scheduleCloudSave(); }
+    catch(e){ console.error('save accounts failed', e); showToast('Impossibile salvare: memoria del browser piena o non disponibile.'); }
+  }
+
+  /* ---------- recurring catch-up ---------- */
+  async function processRecurring(){
+    var today = new Date();
+    var todayY = today.getFullYear(), todayM = today.getMonth()+1, todayD = today.getDate();
+    var currentKey = monthKey(todayY, todayM);
+    var changed = false;
+
+    state.recurring.forEach(function(rec){
+      if(!rec.active) return;
+      if(!rec.generatedMonths) rec.generatedMonths = [];
+      var start = new Date(rec.startDate+'T00:00:00');
+      var cy = start.getFullYear(), cm = start.getMonth()+1;
+      var guard = 0;
+      while(guard < 600){
+        guard++;
+        var key = monthKey(cy,cm);
+        var isCurrentMonth = (key === currentKey);
+        var isPastMonth = (cy < todayY) || (cy === todayY && cm < todayM);
+        if(!isPastMonth && !isCurrentMonth) break;
+        if(rec.generatedMonths.indexOf(key) === -1){
+          var dim = new Date(cy, cm, 0).getDate();
+          var day = Math.min(rec.dayOfMonth, dim);
+          var eligible = isPastMonth || (isCurrentMonth && todayD >= day);
+          if(eligible){
+            var dateStr = cy + '-' + pad(cm) + '-' + pad(day);
+            var amount = rec.amount;
+            var personalAmount = (rec.isShared && rec.peopleCount > 0) ? amount / rec.peopleCount : amount;
+            state.transactions.push({
+              id: uid(), type:'expense', amount:amount, personalAmount:personalAmount,
+              category: rec.category, date: dateStr, account: rec.account,
+              isShared: rec.isShared, peopleCount: rec.isShared ? rec.peopleCount : null,
+              recurringId: rec.id, note: rec.note || '', createdAt: new Date().toISOString()
+            });
+            rec.generatedMonths.push(key);
+            changed = true;
+          }
+        }
+        if(key === currentKey) break;
+        var nxt = addMonth(cy,cm); cy = nxt.y; cm = nxt.m;
+      }
+    });
+
+    if(changed){ await saveTransactions(); await saveRecurring(); }
+  }
+
+  /* ---------- totals ---------- */
+  function computeTotals(){
+    var totalIncome = 0, totalExpense = 0;
+    state.transactions.forEach(function(t){
+      if(t.type === 'income') totalIncome += t.amount;
+      else totalExpense += t.personalAmount;
+    });
+    return { totalIncome: totalIncome, totalExpense: totalExpense, balance: totalIncome - totalExpense };
+  }
+  function computeCategoryBreakdown(type){
+    var map = {};
+    state.transactions.filter(function(t){ return t.type === type; }).forEach(function(t){
+      var val = type === 'expense' ? t.personalAmount : t.amount;
+      map[t.category] = (map[t.category] || 0) + val;
+    });
+    return map;
+  }
+
+  /* ---------- accounts / situazione patrimoniale ----------
+     Ogni conto ha un "offset" salvato (impostato tramite il tasto ✎) più la somma
+     di tutte le entrate e uscite assegnate a quel conto. Per le spese condivise
+     viene sottratto l'intero importo pagato (non solo la tua quota), perché è
+     l'importo che esce realmente dal conto. */
+  function computeAccountBalance(name){
+    var offset = (state.accounts && typeof state.accounts[name] === 'number') ? state.accounts[name] : 0;
+    var sum = 0;
+    state.transactions.forEach(function(t){
+      if(t.account !== name) return;
+      if(t.type === 'income') sum += t.amount; else sum -= t.amount;
+    });
+    return offset + sum;
+  }
+  function computeTotalPatrimonio(){
+    var total = 0;
+    ACCOUNTS.forEach(function(a){ total += computeAccountBalance(a); });
+    return total;
+  }
+
+  /* ---------- rendering: dashboard ---------- */
+  function renderBalance(){
+    var tot = computeTotals();
+    document.getElementById('totalIncomeVal').textContent = fmtEUR(tot.totalIncome);
+    document.getElementById('totalExpenseVal').textContent = fmtEUR(tot.totalExpense);
+    document.getElementById('balanceVal').textContent = fmtEUR(tot.balance);
+    document.getElementById('balanceVal').style.color = tot.balance < 0 ? 'var(--expense)' : 'var(--ink)';
+  }
+
+  function renderRecurring(){
+    var section = document.getElementById('recurringSection');
+    var list = document.getElementById('recurringList');
+    var active = state.recurring.filter(function(r){ return r.active; });
+    if(active.length === 0){ section.style.display = 'none'; list.innerHTML=''; return; }
+    section.style.display = 'block';
+    list.innerHTML = '';
+    active.forEach(function(rec){
+      var row = document.createElement('div');
+      row.className = 'rec-item';
+      var color = CATEGORY_COLORS[rec.category] || '#999';
+      var shareText = rec.isShared ? (' · quota ' + fmtEUR(rec.amount / rec.peopleCount)) : '';
+      var accountText = rec.account ? (' · ' + rec.account) : '';
+      var noteText = rec.note ? (' · ' + escapeHtml(rec.note)) : '';
+      row.innerHTML =
+        '<div class="rec-main">' +
+          '<span class="cat-dot" style="background:'+color+'"></span>' +
+          '<div class="rec-text">' +
+            '<div class="rec-cat">'+rec.category+'</div>' +
+            '<div class="rec-meta">ogni mese, giorno '+rec.dayOfMonth+accountText+shareText+noteText+'</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">' +
+          '<span class="rec-amount">'+fmtEUR(rec.amount)+'</span>' +
+          '<button class="stop-btn" data-id="'+rec.id+'" aria-label="Interrompi ricorrenza">×</button>' +
+        '</div>';
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.stop-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-id');
+        showConfirm('Interrompere questa spesa ricorrente? I movimenti già creati non verranno eliminati.', function(){
+          deleteRecurring(id);
+        });
+      });
+    });
+  }
+
+  function renderTransactions(){
+    var listEl = document.getElementById('txList');
+    if(state.transactions.length === 0){
+      listEl.innerHTML = '<div class="empty-state">Nessun movimento ancora.<br>Aggiungi la tua prima spesa o entrata.</div>';
+      return;
+    }
+    var groups = {};
+    state.transactions.forEach(function(t){
+      var key = t.date.slice(0,7);
+      if(!groups[key]) groups[key] = [];
+      groups[key].push(t);
+    });
+    var keys = Object.keys(groups).sort().reverse();
+    listEl.innerHTML = '';
+    keys.forEach(function(key){
+      var label = document.createElement('div');
+      label.className = 'tx-month-label';
+      label.textContent = monthLabel(key);
+      listEl.appendChild(label);
+
+      var items = groups[key].slice().sort(function(a,b){
+        if(a.date !== b.date) return a.date < b.date ? 1 : -1;
+        return (a.createdAt||'') < (b.createdAt||'') ? 1 : -1;
+      });
+      items.forEach(function(t){
+        var row = document.createElement('div');
+        row.className = 'tx-item';
+        var color = CATEGORY_COLORS[t.category] || '#999';
+        var amountShown = t.type === 'expense' ? t.personalAmount : t.amount;
+        var sign = t.type === 'expense' ? '-' : '+';
+        var badges = '';
+        if(t.isShared) badges += '<span class="badge">÷'+t.peopleCount+'</span>';
+        if(t.recurringId) badges += '<span class="badge">↻ ricorrente</span>';
+        var subExtra = '';
+        if(t.isShared){
+          subExtra = ' · totale '+fmtEUR(t.amount);
+        }
+        var accountText = t.account ? (' · ' + t.account) : '';
+        var noteLine = t.note ? '<div class="tx-note">'+escapeHtml(t.note)+'</div>' : '';
+        row.innerHTML =
+          '<div class="tx-top">' +
+            '<span class="tx-cat"><span class="cat-dot" style="background:'+color+'"></span><span>'+t.category+'</span></span>' +
+            '<span class="tx-amount '+t.type+'">'+sign+fmtEUR(amountShown)+'</span>' +
+          '</div>' +
+          '<div class="tx-bottom">' +
+            '<span class="tx-sub">'+fmtDateIt(t.date)+accountText+subExtra+' '+badges+'</span>' +
+            '<button class="tx-del" data-id="'+t.id+'" aria-label="Elimina movimento">×</button>' +
+          '</div>' +
+          noteLine;
+        listEl.appendChild(row);
+      });
+    });
+    listEl.querySelectorAll('.tx-del').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-id');
+        showConfirm('Eliminare questo movimento?', function(){ deleteTransaction(id); });
+      });
+    });
+  }
+
+  async function deleteTransaction(id){
+    state.transactions = state.transactions.filter(function(t){ return t.id !== id; });
+    await saveTransactions();
+    renderAll();
+  }
+  async function deleteRecurring(id){
+    state.recurring = state.recurring.filter(function(r){ return r.id !== id; });
+    await saveRecurring();
+    renderAll();
+  }
+  async function resetAllData(){
+    state.transactions = [];
+    state.recurring = [];
+    ACCOUNTS.forEach(function(a){ state.accounts[a] = 0; });
+    await saveTransactions();
+    await saveRecurring();
+    await saveAccounts();
+    renderAll();
+  }
+
+  /* ---------- charts ---------- */
+  function buildDonutSVG(map){
+    var entries = Object.keys(map).filter(function(k){ return map[k] > 0; })
+      .map(function(k){ return [k, map[k]]; })
+      .sort(function(a,b){ return b[1]-a[1]; });
+    var total = entries.reduce(function(s,e){ return s+e[1]; }, 0);
+    var size = 210, r = 78, cx = size/2, cy = size/2, sw = 32;
+    var circumference = 2*Math.PI*r;
+    var offset = 0;
+    var circles = '';
+    if(total === 0){
+      circles = '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="var(--line)" stroke-width="'+sw+'"/>';
+    } else {
+      entries.forEach(function(e){
+        var frac = e[1]/total;
+        var len = frac*circumference;
+        var color = CATEGORY_COLORS[e[0]] || '#999';
+        circles += '<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+color+'" stroke-width="'+sw+'" ' +
+          'stroke-dasharray="'+len+' '+(circumference-len)+'" stroke-dashoffset="'+(-offset)+'" ' +
+          'transform="rotate(-90 '+cx+' '+cy+')" stroke-linecap="butt"/>';
+        offset += len;
+      });
+    }
+    var svg = '<svg viewBox="0 0 '+size+' '+size+'" width="'+size+'" height="'+size+'">' +
+      circles +
+      '<circle cx="'+cx+'" cy="'+cy+'" r="'+(r - sw/2 - 6)+'" fill="var(--paper-card)"/>' +
+      '<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" class="donut-center-label" fill="var(--ink)" font-size="12" font-family="IBM Plex Mono, monospace">TOTALE</text>' +
+      '<text x="'+cx+'" y="'+(cy+16)+'" text-anchor="middle" fill="var(--ink)" font-size="14" font-weight="600" font-family="IBM Plex Mono, monospace">'+(total>0? fmtEUR(total).replace('€','€ ') : '€ 0,00')+'</text>' +
+      '</svg>';
+    return { svg: svg, entries: entries, total: total };
+  }
+
+  function renderLegend(container, entries, total){
+    container.innerHTML = '';
+    if(entries.length === 0){
+      container.innerHTML = '<div class="empty-state">Aggiungi qualche movimento per vedere l\'analisi qui.</div>';
+      return;
+    }
+    entries.forEach(function(e){
+      var pct = total>0 ? (e[1]/total*100) : 0;
+      var row = document.createElement('div');
+      row.className = 'legend-row';
+      var color = CATEGORY_COLORS[e[0]] || '#999';
+      row.innerHTML =
+        '<span class="legend-dot" style="background:'+color+'"></span>' +
+        '<span class="legend-cat">'+e[0]+'</span>' +
+        '<span class="legend-pct">'+pct.toFixed(1)+'%</span>' +
+        '<span class="legend-val">'+fmtEUR(e[1])+'</span>';
+      container.appendChild(row);
+    });
+  }
+
+  function renderCharts(){
+    var expMap = computeCategoryBreakdown('expense');
+    var incMap = computeCategoryBreakdown('income');
+
+    var expDonut = buildDonutSVG(expMap);
+    document.getElementById('expenseChartWrap').innerHTML = expDonut.svg;
+    document.getElementById('expenseChartTotal').textContent = 'Totale: ' + fmtEUR(expDonut.total);
+    renderLegend(document.getElementById('expenseLegend'), expDonut.entries, expDonut.total);
+
+    var incDonut = buildDonutSVG(incMap);
+    document.getElementById('incomeChartWrap').innerHTML = incDonut.svg;
+    document.getElementById('incomeChartTotal').textContent = 'Totale: ' + fmtEUR(incDonut.total);
+    renderLegend(document.getElementById('incomeLegend'), incDonut.entries, incDonut.total);
+  }
+
+  function renderAccounts(){
+    document.getElementById('patrimonioTotalVal').textContent = fmtEUR(computeTotalPatrimonio());
+    var list = document.getElementById('accountsList');
+    list.innerHTML = '';
+    ACCOUNTS.forEach(function(a){
+      var bal = computeAccountBalance(a);
+      var row = document.createElement('div');
+      row.className = 'account-item';
+      row.innerHTML =
+        '<span class="account-name">'+a+'</span>' +
+        '<div style="display:flex;align-items:center;gap:12px;">' +
+          '<span class="account-balance" style="color:'+(bal < 0 ? 'var(--expense)' : 'var(--ink)')+'">'+fmtEUR(bal)+'</span>' +
+          '<button class="edit-btn" data-account="'+a+'" aria-label="Aggiorna saldo di '+a+'">✎</button>' +
+        '</div>';
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.edit-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ openAccountEdit(btn.getAttribute('data-account')); });
+    });
+  }
+
+  function openAccountEdit(name){
+    editingAccount = name;
+    document.getElementById('accountEditTitle').textContent = 'Aggiorna saldo — ' + name;
+    document.getElementById('inputAccountBalance').value = computeAccountBalance(name).toFixed(2);
+    document.getElementById('accountEditOverlay').classList.remove('hidden');
+    setTimeout(function(){ document.getElementById('inputAccountBalance').focus(); }, 50);
+  }
+  function closeAccountEdit(){
+    document.getElementById('accountEditOverlay').classList.add('hidden');
+    editingAccount = null;
+  }
+  async function saveAccountEdit(){
+    var val = parseFloat(document.getElementById('inputAccountBalance').value);
+    if(isNaN(val)){ showToast('Inserisci un importo valido.'); return; }
+    var sumWithoutOffset = 0;
+    state.transactions.forEach(function(t){
+      if(t.account !== editingAccount) return;
+      if(t.type === 'income') sumWithoutOffset += t.amount; else sumWithoutOffset -= t.amount;
+    });
+    var accountName = editingAccount;
+    state.accounts[accountName] = val - sumWithoutOffset;
+    await saveAccounts();
+    closeAccountEdit();
+    renderAll();
+    showToast('Saldo di ' + accountName + ' aggiornato.');
+  }
+
+  function renderAll(){
+    renderBalance();
+    renderRecurring();
+    renderTransactions();
+    var chartsPage = document.getElementById('page-charts');
+    if(!chartsPage.classList.contains('hidden')) renderCharts();
+    var patPage = document.getElementById('page-patrimonio');
+    if(!patPage.classList.contains('hidden')) renderAccounts();
+  }
+
+  /* ---------- modal ---------- */
+  function populateCategorySelect(type){
+    var sel = document.getElementById('inputCategory');
+    sel.innerHTML = '';
+    var cats = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    cats.forEach(function(c){
+      var opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+  }
+  function populateAccountSelect(){
+    var sel = document.getElementById('inputAccount');
+    sel.innerHTML = '';
+    ACCOUNTS.forEach(function(a){
+      var opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      sel.appendChild(opt);
+    });
+  }
+
+  function openModal(type){
+    currentModalType = type;
+    document.getElementById('modalTitle').textContent = type === 'expense' ? 'Aggiungi spesa' : 'Aggiungi entrata';
+    populateCategorySelect(type);
+    populateAccountSelect();
+    document.getElementById('inputAmount').value = '';
+    var today = new Date();
+    document.getElementById('inputDate').value = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
+    document.getElementById('toggleShared').checked = false;
+    document.getElementById('toggleRecurring').checked = false;
+    document.getElementById('inputPeopleCount').value = 2;
+    document.getElementById('inputNote').value = '';
+    document.getElementById('peopleCountField').style.display = 'none';
+    document.getElementById('recurringHint').style.display = 'none';
+    document.getElementById('formError').style.display = 'none';
+    var expenseOnly = type === 'expense';
+    document.getElementById('sharedRow').style.display = expenseOnly ? 'block' : 'none';
+    document.getElementById('recurringRow').style.display = expenseOnly ? 'block' : 'none';
+    document.getElementById('noteField').style.display = expenseOnly ? 'block' : 'none';
+    document.getElementById('modalOverlay').classList.remove('hidden');
+    setTimeout(function(){ document.getElementById('inputAmount').focus(); }, 50);
+  }
+  function closeModal(){
+    document.getElementById('modalOverlay').classList.add('hidden');
+  }
+
+  function updateShareHint(){
+    var amount = parseFloat(document.getElementById('inputAmount').value) || 0;
+    var people = parseInt(document.getElementById('inputPeopleCount').value, 10) || 1;
+    var quota = people > 0 ? amount/people : amount;
+    document.getElementById('shareHint').textContent = 'La tua quota: ' + fmtEUR(quota) + ' (' + fmtEUR(amount) + ' ÷ ' + people + ')';
+  }
+  function updateRecurringHint(){
+    var dateVal = document.getElementById('inputDate').value;
+    if(!dateVal) return;
+    var d = new Date(dateVal+'T00:00:00');
+    document.getElementById('recurringHint').textContent = 'Verrà aggiunta automaticamente ogni mese, il giorno '+d.getDate()+', quando apri il registro.';
+  }
+
+  function showFormError(msg){
+    var el = document.getElementById('formError');
+    el.textContent = msg; el.style.display = 'block';
+  }
+
+  async function handleSaveTransaction(){
+    var type = currentModalType;
+    var amount = parseFloat(document.getElementById('inputAmount').value);
+    var category = document.getElementById('inputCategory').value;
+    var account = document.getElementById('inputAccount').value;
+    var date = document.getElementById('inputDate').value;
+
+    if(!amount || amount <= 0){ showFormError('Inserisci un importo valido.'); return; }
+    if(!category){ showFormError('Seleziona una categoria.'); return; }
+    if(!account){ showFormError('Seleziona un conto.'); return; }
+    if(!date){ showFormError('Seleziona una data.'); return; }
+
+    var isShared = false, peopleCount = null;
+    if(type === 'expense'){
+      isShared = document.getElementById('toggleShared').checked;
+      if(isShared){
+        peopleCount = parseInt(document.getElementById('inputPeopleCount').value, 10);
+        if(!peopleCount || peopleCount < 2){ showFormError('Indica tra quante persone viene divisa (minimo 2).'); return; }
+      }
+    }
+    var personalAmount = (type === 'expense' && isShared) ? amount/peopleCount : amount;
+    var isRecurring = type === 'expense' && document.getElementById('toggleRecurring').checked;
+    var note = type === 'expense' ? document.getElementById('inputNote').value.trim() : '';
+
+    var tx = {
+      id: uid(), type: type, amount: amount, personalAmount: personalAmount,
+      category: category, date: date, account: account,
+      isShared: isShared, peopleCount: peopleCount, recurringId: null, note: note,
+      createdAt: new Date().toISOString()
+    };
+
+    if(isRecurring){
+      var d = new Date(date+'T00:00:00');
+      var recId = uid();
+      state.recurring.push({
+        id: recId, amount: amount, category: category, account: account,
+        dayOfMonth: d.getDate(), isShared: isShared, peopleCount: peopleCount,
+        startDate: date, active: true, note: note, generatedMonths: [ymOf(d)]
+      });
+      tx.recurringId = recId;
+      await saveRecurring();
+    }
+
+    state.transactions.push(tx);
+    await saveTransactions();
+    closeModal();
+    renderAll();
+  }
+
+  /* ---------- confirm ---------- */
+  var pendingCancelAction = null;
+  function showConfirm(message, onConfirm, onCancel){
+    document.getElementById('confirmMessage').textContent = message;
+    pendingConfirmAction = onConfirm;
+    pendingCancelAction = onCancel || null;
+    document.getElementById('confirmOverlay').classList.remove('hidden');
+  }
+  function closeConfirm(){
+    document.getElementById('confirmOverlay').classList.add('hidden');
+    pendingConfirmAction = null;
+    pendingCancelAction = null;
+  }
+  function cancelConfirm(){
+    var cb = pendingCancelAction;
+    closeConfirm();
+    if(cb) cb();
+  }
+
+  /* ---------- nav ---------- */
+  function switchPage(page){
+    document.querySelectorAll('.nav-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-page') === page);
+    });
+    document.getElementById('page-dashboard').classList.toggle('hidden', page !== 'dashboard');
+    document.getElementById('page-charts').classList.toggle('hidden', page !== 'charts');
+    document.getElementById('page-patrimonio').classList.toggle('hidden', page !== 'patrimonio');
+    if(page === 'charts') renderCharts();
+    if(page === 'patrimonio') renderAccounts();
+  }
+
+  /* ---------- wiring ---------- */
+  document.getElementById('btnAddExpense').addEventListener('click', function(){ openModal('expense'); });
+  document.getElementById('btnAddIncome').addEventListener('click', function(){ openModal('income'); });
+  document.getElementById('btnCancel').addEventListener('click', closeModal);
+  document.getElementById('modalOverlay').addEventListener('click', function(e){
+    if(e.target.id === 'modalOverlay') closeModal();
+  });
+  document.getElementById('btnSave').addEventListener('click', handleSaveTransaction);
+
+  document.getElementById('toggleShared').addEventListener('change', function(){
+    document.getElementById('peopleCountField').style.display = this.checked ? 'block' : 'none';
+    if(this.checked) updateShareHint();
+  });
+  document.getElementById('inputAmount').addEventListener('input', function(){
+    if(document.getElementById('toggleShared').checked) updateShareHint();
+  });
+  document.getElementById('inputPeopleCount').addEventListener('input', updateShareHint);
+  document.getElementById('toggleRecurring').addEventListener('change', function(){
+    document.getElementById('recurringHint').style.display = this.checked ? 'block' : 'none';
+    if(this.checked) updateRecurringHint();
+  });
+  document.getElementById('inputDate').addEventListener('change', function(){
+    if(document.getElementById('toggleRecurring').checked) updateRecurringHint();
+  });
+
+  document.getElementById('confirmCancel').addEventListener('click', cancelConfirm);
+  document.getElementById('confirmOverlay').addEventListener('click', function(e){
+    if(e.target.id === 'confirmOverlay') cancelConfirm();
+  });
+  document.getElementById('confirmOk').addEventListener('click', function(){
+    var action = pendingConfirmAction;
+    closeConfirm();
+    if(action) action();
+  });
+
+  document.getElementById('accountEditCancel').addEventListener('click', closeAccountEdit);
+  document.getElementById('accountEditOverlay').addEventListener('click', function(e){
+    if(e.target.id === 'accountEditOverlay') closeAccountEdit();
+  });
+  document.getElementById('accountEditSave').addEventListener('click', saveAccountEdit);
+
+  document.getElementById('btnSettings').addEventListener('click', function(){
+    document.getElementById('settingsOverlay').classList.remove('hidden');
+  });
+  document.getElementById('btnSettingsClose').addEventListener('click', closeSettings);
+  document.getElementById('settingsOverlay').addEventListener('click', function(e){
+    if(e.target.id === 'settingsOverlay') closeSettings();
+  });
+  function closeSettings(){
+    document.getElementById('settingsOverlay').classList.add('hidden');
+  }
+
+  async function exportBackup(){
+    var today = new Date();
+    var filename = 'libro-mastro-backup-' + today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate()) + '.json';
+    var json = JSON.stringify({
+      app: 'libro-mastro', version: 1, exportedAt: today.toISOString(),
+      transactions: state.transactions, recurring: state.recurring, accounts: state.accounts
+    }, null, 2);
+    try{
+      var dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null;
+      if(dl){
+        await dl.save({filename: filename, data: json});
+      }else{
+        var blob = new Blob([json], {type:'application/json'});
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      }
+      closeSettings();
+      showToast('Backup pronto. Salvalo nella cartella di Google Drive per averlo anche lì.');
+    }catch(e){
+      console.error(e);
+      showToast('Backup non salvato. Riprova e conferma il salvataggio del file.');
+    }
+  }
+
+  function handleImportFile(e){
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      try{
+        var parsed = JSON.parse(ev.target.result);
+        if(!parsed || !Array.isArray(parsed.transactions) || !Array.isArray(parsed.recurring)){
+          showToast('File non valido: non sembra un backup di Libro Mastro.');
+          return;
+        }
+        closeSettings();
+        showConfirm('Importare questo backup? Sostituirà tutti i dati attualmente presenti nell\'app.', async function(){
+          state.transactions = parsed.transactions;
+          state.recurring = parsed.recurring;
+          state.accounts = (parsed.accounts && typeof parsed.accounts === 'object') ? parsed.accounts : {};
+          ACCOUNTS.forEach(function(a){ if(typeof state.accounts[a] !== 'number') state.accounts[a] = 0; });
+          await saveTransactions();
+          await saveRecurring();
+          await saveAccounts();
+          renderAll();
+          showToast('Backup importato correttamente.');
+        });
+      }catch(err){
+        console.error(err);
+        showToast('File non valido o corrotto.');
+      }
+    };
+    reader.onerror = function(){ showToast('Impossibile leggere il file.'); };
+    reader.readAsText(file);
+  }
+
+  document.getElementById('btnExport').addEventListener('click', exportBackup);
+  document.getElementById('importFileInput').addEventListener('change', handleImportFile);
+  document.getElementById('btnResetData').addEventListener('click', function(){
+    closeSettings();
+    showConfirm(cloudTokenValid() ? 'Cancellare tutti i dati, anche quelli salvati su Google Drive? L\'azione è irreversibile.' : 'Cancellare tutti i dati salvati nel registro? L\'azione è irreversibile.', resetAllData);
+  });
+
+  document.querySelectorAll('.nav-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){ switchPage(btn.getAttribute('data-page')); });
+  });
+
+
+  /* ---------- sincronizzazione con Google Drive ----------
+     I dati di ogni persona vengono salvati in un file privato nella cartella
+     nascosta "appDataFolder" del suo Google Drive: solo questa app lo vede.
+     Senza accesso Google l'app funziona in locale, con tutti i saldi a zero. */
+  var GOOGLE_CLIENT_ID = 'INSERISCI_QUI_IL_TUO_CLIENT_ID.apps.googleusercontent.com';
+  var GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata openid email';
+  var CLOUD_FILE_NAME = 'libro-mastro.json';
+  var cloud = { token:null, expiresAt:0, fileId:null, email:null, tokenClient:null, saveTimer:null, loading:false, status:'' };
+
+  function cloudConfigured(){ return GOOGLE_CLIENT_ID.indexOf('INSERISCI') === -1; }
+  function cloudTokenValid(){ return !!cloud.token && Date.now() < cloud.expiresAt; }
+  function cloudDirty(){ try{ return localStorage.getItem('ft:cloud-dirty') === '1'; }catch(e){ return false; } }
+  function setCloudDirty(v){ try{ if(v) localStorage.setItem('ft:cloud-dirty','1'); else localStorage.removeItem('ft:cloud-dirty'); }catch(e){} }
+  function hadGoogleSession(){ try{ return !!localStorage.getItem('ft:google-user'); }catch(e){ return false; } }
+
+  function renderSyncBar(){
+    var text = document.getElementById('syncText');
+    var inBtn = document.getElementById('btnGoogleIn');
+    var outBtn = document.getElementById('btnGoogleOut');
+    if(cloudTokenValid()){
+      text.innerHTML = '<b>' + escapeHtml(cloud.email || 'Account Google') + '</b> · ' + escapeHtml(cloud.status || 'sincronizzato con Google Drive');
+      inBtn.style.display = 'none'; outBtn.style.display = '';
+    } else if(hadGoogleSession()){
+      text.innerHTML = 'Sessione Google scaduta. Riconnettiti per vedere e salvare i tuoi conti.';
+      inBtn.textContent = 'Riconnetti'; inBtn.style.display = ''; outBtn.style.display = '';
+    } else {
+      text.textContent = 'Modalità locale: i dati restano solo in questo browser.';
+      inBtn.textContent = 'Accedi con Google'; inBtn.style.display = ''; outBtn.style.display = 'none';
+    }
+  }
+
+  function initTokenClient(){
+    if(cloud.tokenClient) return true;
+    if(!(window.google && google.accounts && google.accounts.oauth2)) return false;
+    cloud.tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: GOOGLE_SCOPES,
+      callback: onGoogleToken,
+      error_callback: function(err){
+        if(err && err.type === 'popup_closed') return;
+        renderSyncBar();
+      }
+    });
+    return true;
+  }
+
+  function googleSignIn(){
+    if(!cloudConfigured()){
+      showToast('Accesso Google non configurato: inserisci il Client ID nel file (vedi istruzioni).');
+      return;
+    }
+    if(!initTokenClient()){
+      showToast('Il servizio Google si sta ancora caricando. Riprova tra un istante.');
+      return;
+    }
+    cloud.tokenClient.requestAccessToken({ prompt: hadGoogleSession() ? '' : 'select_account' });
+  }
+
+  async function onGoogleToken(resp){
+    if(!resp || resp.error){ showToast('Accesso a Google non riuscito.'); renderSyncBar(); return; }
+    cloud.token = resp.access_token;
+    cloud.expiresAt = Date.now() + (Number(resp.expires_in || 3600) - 60) * 1000;
+    var wasSession = hadGoogleSession();
+    try{
+      var info = await gfetch('https://www.googleapis.com/oauth2/v3/userinfo');
+      cloud.email = info.email || null;
+      try{ localStorage.setItem('ft:google-user', cloud.email || '1'); }catch(e){}
+    }catch(e){ console.error(e); }
+    renderSyncBar();
+    await cloudLoad(wasSession);
+  }
+
+  async function gfetch(url, opts, asText){
+    if(!cloudTokenValid()){ renderSyncBar(); throw new Error('token-expired'); }
+    opts = opts || {};
+    opts.headers = Object.assign({ 'Authorization': 'Bearer ' + cloud.token }, opts.headers || {});
+    var r = await fetch(url, opts);
+    if(r.status === 401){ cloud.token = null; renderSyncBar(); throw new Error('token-expired'); }
+    if(!r.ok) throw new Error('http-' + r.status);
+    return asText ? r.text() : r.json();
+  }
+
+  function cloudPayload(){
+    return JSON.stringify({ app:'libro-mastro', version:1, savedAt:new Date().toISOString(),
+      transactions: state.transactions, recurring: state.recurring, accounts: state.accounts });
+  }
+  function hasLocalData(){
+    if(state.transactions.length || state.recurring.length) return true;
+    return ACCOUNTS.some(function(a){ return state.accounts[a] && state.accounts[a] !== 0; });
+  }
+
+  async function cloudCreate(){
+    var boundary = 'lm' + Date.now();
+    var body = '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify({ name: CLOUD_FILE_NAME, parents: ['appDataFolder'] }) +
+      '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + cloudPayload() +
+      '\r\n--' + boundary + '--';
+    var res = await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+      method:'POST', headers:{ 'Content-Type':'multipart/related; boundary=' + boundary }, body: body
+    });
+    cloud.fileId = res.id;
+  }
+
+  async function cloudLoad(isReconnect){
+    cloud.loading = true;
+    try{
+      var q = encodeURIComponent("name='" + CLOUD_FILE_NAME + "'");
+      var list = await gfetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=' + q + '&fields=files(id)');
+      if(list.files && list.files.length){
+        cloud.fileId = list.files[0].id;
+        if(isReconnect && cloudDirty()){
+          cloud.loading = false;
+          await cloudSave();
+          showToast('Modifiche fatte offline caricate su Google Drive.');
+          return;
+        }
+        var text = await gfetch('https://www.googleapis.com/drive/v3/files/' + cloud.fileId + '?alt=media', null, true);
+        var data = JSON.parse(text);
+        if(!data || !Array.isArray(data.transactions) || !Array.isArray(data.recurring)) throw new Error('bad-data');
+        var apply = async function(){
+          await applyCloudData(data);
+          setCloudDirty(false);
+          cloud.status = 'sincronizzato con Google Drive';
+          renderSyncBar();
+          showToast('Conti caricati dal tuo Google Drive.');
+        };
+        if(hasLocalData() && !isReconnect){
+          showConfirm('Nel tuo Google Drive ci sono già dei dati. Caricandoli sostituirai quelli presenti in questo browser. Procedere?',
+            apply, function(){ googleDisconnectKeepLocal(); });
+        } else {
+          await apply();
+        }
+      } else {
+        await cloudCreate();
+        cloud.status = 'sincronizzato con Google Drive';
+        renderSyncBar();
+        showToast('Collegato a Google Drive.');
+      }
+    }catch(e){
+      console.error('cloud load failed', e);
+      if(String(e.message) !== 'token-expired') showToast('Non riesco a leggere i dati da Google Drive. Riprova.');
+    }finally{
+      cloud.loading = false;
+    }
+  }
+
+  async function applyCloudData(data){
+    state.transactions = data.transactions;
+    state.recurring = data.recurring;
+    state.accounts = (data.accounts && typeof data.accounts === 'object') ? data.accounts : {};
+    ACCOUNTS.forEach(function(a){ if(typeof state.accounts[a] !== 'number') state.accounts[a] = 0; });
+    cloud.loading = true;
+    await saveTransactions(); await saveRecurring(); await saveAccounts();
+    await processRecurring();
+    cloud.loading = false;
+    renderAll();
+  }
+
+  function scheduleCloudSave(){
+    if(cloud.loading) return;
+    if(!cloud.fileId || !cloudTokenValid()){ if(hadGoogleSession()) setCloudDirty(true); return; }
+    clearTimeout(cloud.saveTimer);
+    cloud.status = 'salvataggio…'; renderSyncBar();
+    cloud.saveTimer = setTimeout(cloudSave, 700);
+  }
+  async function cloudSave(){
+    try{
+      await gfetch('https://www.googleapis.com/upload/drive/v3/files/' + cloud.fileId + '?uploadType=media', {
+        method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: cloudPayload()
+      });
+      setCloudDirty(false);
+      cloud.status = 'sincronizzato con Google Drive';
+      renderSyncBar();
+    }catch(e){
+      console.error('cloud save failed', e);
+      setCloudDirty(true);
+      showToast(String(e.message) === 'token-expired'
+        ? 'Sessione Google scaduta: riconnettiti per salvare le ultime modifiche.'
+        : 'Salvataggio su Google Drive non riuscito.');
+      renderSyncBar();
+    }
+  }
+
+  async function googleSignOut(skipConfirm){
+    var doIt = async function(){
+      clearTimeout(cloud.saveTimer);
+      try{ if(cloud.token && window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(cloud.token, function(){}); }catch(e){}
+      cloud.token = null; cloud.fileId = null; cloud.email = null; cloud.status = '';
+      try{
+        ['ft:transactions','ft:recurring','ft:accounts','ft:google-user','ft:cloud-dirty'].forEach(function(k){ localStorage.removeItem(k); });
+      }catch(e){}
+      state.transactions = []; state.recurring = []; state.accounts = {};
+      ACCOUNTS.forEach(function(a){ state.accounts[a] = 0; });
+      renderSyncBar(); renderAll();
+    };
+    if(skipConfirm === true) return doIt();
+    showConfirm('Uscire da Google? I dati restano nel tuo Drive e vengono rimossi da questo browser.', doIt);
+  }
+
+  function googleDisconnectKeepLocal(){
+    clearTimeout(cloud.saveTimer);
+    try{ if(cloud.token && window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(cloud.token, function(){}); }catch(e){}
+    cloud.token = null; cloud.fileId = null; cloud.email = null; cloud.status = '';
+    try{ localStorage.removeItem('ft:google-user'); localStorage.removeItem('ft:cloud-dirty'); }catch(e){}
+    renderSyncBar();
+    showToast('Collegamento a Google annullato. Restano i dati di questo browser.');
+  }
+
+  document.getElementById('btnGoogleIn').addEventListener('click', googleSignIn);
+  document.getElementById('btnGoogleOut').addEventListener('click', function(){ googleSignOut(false); });
+
+  /* ---------- init ---------- */
+  (async function init(){
+    await loadData();
+    await processRecurring();
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    renderAll();
+    renderSyncBar();
+    if(hadGoogleSession() && cloudConfigured()){
+      window.addEventListener('load', function(){
+        setTimeout(function(){ try{ if(initTokenClient()) cloud.tokenClient.requestAccessToken({ prompt:'' }); }catch(e){} }, 400);
+      });
+    }
+  })();
+
+})();
+</script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</body>
+</html>

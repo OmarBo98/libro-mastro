@@ -342,6 +342,15 @@
     padding:6px 12px;font-size:12px;font-weight:600;
   }
   .sync-btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);}
+  .locked .sync-bar,.locked main,.locked .bottom-nav,.locked #btnSettings{display:none;}
+  .gate{display:none;padding:34px 22px 40px;}
+  .locked .gate{display:block;}
+  .gate h2{font-family:var(--font-display);font-size:20px;line-height:1.25;margin:0 0 10px;}
+  .gate p{font-size:13.5px;color:var(--ink-soft);line-height:1.55;margin:0 0 18px;}
+  .gate .gate-note{font-size:12.5px;color:var(--expense);margin:12px 0 0;}
+  .sync-btn.big{padding:12px 18px;font-size:14px;border-radius:var(--radius-sm);}
+  .sync-drive{display:flex;gap:8px;flex-wrap:wrap;width:100%;}
+  .sync-drive .sync-btn{flex:1 1 150px;border-radius:var(--radius-sm);padding:8px 10px;line-height:1.3;}
 </style>
 </head>
 <body>
@@ -363,10 +372,21 @@
   <div class="sync-bar" id="syncBar">
     <span class="sync-text" id="syncText"></span>
     <span class="sync-actions">
-      <button class="sync-btn" id="btnGoogleIn" type="button">Accedi con Google</button>
+      <button class="sync-btn" id="btnGoogleReconnect" type="button">Riconnetti</button>
       <button class="sync-btn ghost" id="btnGoogleOut" type="button">Esci</button>
     </span>
+    <div class="sync-drive">
+      <button class="sync-btn" id="btnDriveSave" type="button">Salvataggio manuale su Drive</button>
+      <button class="sync-btn ghost" id="btnDriveLoad" type="button">Importa ultimo aggiornamento da Drive</button>
+    </div>
   </div>
+
+  <section class="gate" id="gate">
+    <h2>I tuoi conti, solo con il tuo account Google</h2>
+    <p>Su questa pagina non viene salvato nulla. Accedi per vedere e aggiornare i tuoi conti, che restano nel tuo Google Drive.</p>
+    <button class="sync-btn big" id="btnGoogleIn" type="button">Accedi con Google</button>
+    <p class="gate-note" id="gateNote"></p>
+  </section>
 
   <main>
     <div class="page" id="page-dashboard">
@@ -539,13 +559,6 @@
     <div class="modal-handle"></div>
     <h2>Impostazioni</h2>
     <div class="settings-list">
-      <button class="settings-item" id="btnExport">
-        <span class="settings-item-icon">⭳</span>
-        <span>
-          <span class="settings-item-title">Esporta backup</span>
-          <span class="settings-item-sub">Scarica un file con tutti i tuoi dati, da spostare nella cartella di Google Drive</span>
-        </span>
-      </button>
       <label class="settings-item" for="importFileInput" id="btnImport">
         <span class="settings-item-icon">⭱</span>
         <span>
@@ -622,34 +635,14 @@
   }
   function ymOf(d){ return monthKey(d.getFullYear(), d.getMonth()+1); }
 
-  /* ---------- storage (localStorage del browser: i dati restano su questo dispositivo/Chrome) ---------- */
+  /* ---------- dati solo in memoria: nessun salvataggio nel browser ---------- */
   async function loadData(){
-    try{
-      var raw = localStorage.getItem('ft:transactions');
-      state.transactions = raw ? JSON.parse(raw) : [];
-    }catch(e){ state.transactions = []; }
-    try{
-      var raw2 = localStorage.getItem('ft:recurring');
-      state.recurring = raw2 ? JSON.parse(raw2) : [];
-    }catch(e){ state.recurring = []; }
-    try{
-      var raw3 = localStorage.getItem('ft:accounts');
-      state.accounts = raw3 ? JSON.parse(raw3) : {};
-    }catch(e){ state.accounts = {}; }
-    ACCOUNTS.forEach(function(a){ if(typeof state.accounts[a] !== 'number') state.accounts[a] = 0; });
+    state.transactions = []; state.recurring = []; state.accounts = {};
+    ACCOUNTS.forEach(function(a){ state.accounts[a] = 0; });
   }
-  async function saveTransactions(){
-    try{ localStorage.setItem('ft:transactions', JSON.stringify(state.transactions)); scheduleCloudSave(); }
-    catch(e){ console.error('save tx failed', e); showToast('Impossibile salvare: memoria del browser piena o non disponibile.'); }
-  }
-  async function saveRecurring(){
-    try{ localStorage.setItem('ft:recurring', JSON.stringify(state.recurring)); scheduleCloudSave(); }
-    catch(e){ console.error('save recurring failed', e); showToast('Impossibile salvare: memoria del browser piena o non disponibile.'); }
-  }
-  async function saveAccounts(){
-    try{ localStorage.setItem('ft:accounts', JSON.stringify(state.accounts)); scheduleCloudSave(); }
-    catch(e){ console.error('save accounts failed', e); showToast('Impossibile salvare: memoria del browser piena o non disponibile.'); }
-  }
+  async function saveTransactions(){ scheduleCloudSave(); }
+  async function saveRecurring(){ scheduleCloudSave(); }
+  async function saveAccounts(){ scheduleCloudSave(); }
 
   /* ---------- recurring catch-up ---------- */
   async function processRecurring(){
@@ -1183,33 +1176,6 @@
     document.getElementById('settingsOverlay').classList.add('hidden');
   }
 
-  async function exportBackup(){
-    var today = new Date();
-    var filename = 'libro-mastro-backup-' + today.getFullYear() + pad(today.getMonth()+1) + pad(today.getDate()) + '.json';
-    var json = JSON.stringify({
-      app: 'libro-mastro', version: 1, exportedAt: today.toISOString(),
-      transactions: state.transactions, recurring: state.recurring, accounts: state.accounts
-    }, null, 2);
-    try{
-      var dl = (window.claude && window.claude.use) ? await window.claude.use('downloads') : null;
-      if(dl){
-        await dl.save({filename: filename, data: json});
-      }else{
-        var blob = new Blob([json], {type:'application/json'});
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
-      }
-      closeSettings();
-      showToast('Backup pronto. Salvalo nella cartella di Google Drive per averlo anche lì.');
-    }catch(e){
-      console.error(e);
-      showToast('Backup non salvato. Riprova e conferma il salvataggio del file.');
-    }
-  }
-
   function handleImportFile(e){
     var file = e.target.files && e.target.files[0];
     e.target.value = '';
@@ -1243,7 +1209,6 @@
     reader.readAsText(file);
   }
 
-  document.getElementById('btnExport').addEventListener('click', exportBackup);
   document.getElementById('importFileInput').addEventListener('change', handleImportFile);
   document.getElementById('btnResetData').addEventListener('click', function(){
     closeSettings();
@@ -1255,34 +1220,29 @@
   });
 
 
-  /* ---------- sincronizzazione con Google Drive ----------
-     I dati di ogni persona vengono salvati in un file privato nella cartella
-     nascosta "appDataFolder" del suo Google Drive: solo questa app lo vede.
-     Senza accesso Google l'app funziona in locale, con tutti i saldi a zero. */
+  /* ---------- Google Drive ----------
+     Nessun dato viene salvato nel browser. I conti vivono solo in memoria
+     e, dopo l'accesso, in un file privato nella cartella nascosta
+     "appDataFolder" del Google Drive di chi ha fatto l'accesso. */
   var GOOGLE_CLIENT_ID = '795038776608-u9pf2q32g949m1s08sgnstmna9lpfie0.apps.googleusercontent.com';
   var GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata openid email';
   var CLOUD_FILE_NAME = 'libro-mastro.json';
-  var cloud = { token:null, expiresAt:0, fileId:null, email:null, tokenClient:null, saveTimer:null, loading:false, status:'' };
+  var cloud = { token:null, expiresAt:0, fileId:null, email:null, tokenClient:null, saveTimer:null, loading:false, ready:false, dirty:false, status:'' };
 
-  function cloudConfigured(){ return GOOGLE_CLIENT_ID.indexOf('INSERISCI') === -1; }
   function cloudTokenValid(){ return !!cloud.token && Date.now() < cloud.expiresAt; }
-  function cloudDirty(){ try{ return localStorage.getItem('ft:cloud-dirty') === '1'; }catch(e){ return false; } }
-  function setCloudDirty(v){ try{ if(v) localStorage.setItem('ft:cloud-dirty','1'); else localStorage.removeItem('ft:cloud-dirty'); }catch(e){} }
-  function hadGoogleSession(){ try{ return !!localStorage.getItem('ft:google-user'); }catch(e){ return false; } }
+  function setGateNote(msg){ var n = document.getElementById('gateNote'); if(n) n.textContent = msg || ''; }
 
   function renderSyncBar(){
+    document.getElementById('app').classList.toggle('locked', !cloud.ready);
+    if(!cloud.ready) return;
     var text = document.getElementById('syncText');
-    var inBtn = document.getElementById('btnGoogleIn');
-    var outBtn = document.getElementById('btnGoogleOut');
+    var rec = document.getElementById('btnGoogleReconnect');
     if(cloudTokenValid()){
       text.innerHTML = '<b>' + escapeHtml(cloud.email || 'Account Google') + '</b> · ' + escapeHtml(cloud.status || 'sincronizzato con Google Drive');
-      inBtn.style.display = 'none'; outBtn.style.display = '';
-    } else if(hadGoogleSession()){
-      text.innerHTML = 'Sessione Google scaduta. Riconnettiti per vedere e salvare i tuoi conti.';
-      inBtn.textContent = 'Riconnetti'; inBtn.style.display = ''; outBtn.style.display = '';
+      rec.style.display = 'none';
     } else {
-      text.textContent = 'Modalità locale: i dati restano solo in questo browser.';
-      inBtn.textContent = 'Accedi con Google'; inBtn.style.display = ''; outBtn.style.display = 'none';
+      text.textContent = 'Sessione Google scaduta. Riconnettiti per salvare le modifiche.';
+      rec.style.display = '';
     }
   }
 
@@ -1294,37 +1254,34 @@
       scope: GOOGLE_SCOPES,
       callback: onGoogleToken,
       error_callback: function(err){
-        if(err && err.type === 'popup_closed') return;
-        renderSyncBar();
+        if(err && err.type !== 'popup_closed') showToast('Accesso a Google non riuscito.');
       }
     });
     return true;
   }
 
   function googleSignIn(){
-    if(!cloudConfigured()){
-      showToast('Accesso Google non configurato: inserisci il Client ID nel file (vedi istruzioni).');
-      return;
-    }
     if(!initTokenClient()){
       showToast('Il servizio Google si sta ancora caricando. Riprova tra un istante.');
       return;
     }
-    cloud.tokenClient.requestAccessToken({ prompt: hadGoogleSession() ? '' : 'select_account' });
+    cloud.tokenClient.requestAccessToken({ prompt: '' });
   }
 
   async function onGoogleToken(resp){
-    if(!resp || resp.error){ showToast('Accesso a Google non riuscito.'); renderSyncBar(); return; }
+    if(!resp || resp.error){ showToast('Accesso a Google non riuscito.'); return; }
     cloud.token = resp.access_token;
     cloud.expiresAt = Date.now() + (Number(resp.expires_in || 3600) - 60) * 1000;
-    var wasSession = hadGoogleSession();
     try{
       var info = await gfetch('https://www.googleapis.com/oauth2/v3/userinfo');
       cloud.email = info.email || null;
-      try{ localStorage.setItem('ft:google-user', cloud.email || '1'); }catch(e){}
     }catch(e){ console.error(e); }
-    renderSyncBar();
-    await cloudLoad(wasSession);
+    if(cloud.ready){
+      if(cloud.dirty) await cloudSave(true);
+      renderSyncBar();
+      return;
+    }
+    await cloudLoad();
   }
 
   async function gfetch(url, opts, asText){
@@ -1341,11 +1298,18 @@
     return JSON.stringify({ app:'libro-mastro', version:1, savedAt:new Date().toISOString(),
       transactions: state.transactions, recurring: state.recurring, accounts: state.accounts });
   }
-  function hasLocalData(){
-    if(state.transactions.length || state.recurring.length) return true;
-    return ACCOUNTS.some(function(a){ return state.accounts[a] && state.accounts[a] !== 0; });
-  }
 
+  async function cloudFindFile(){
+    var q = encodeURIComponent("name='" + CLOUD_FILE_NAME + "'");
+    var list = await gfetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=' + q + '&fields=files(id)');
+    return (list.files && list.files.length) ? list.files[0].id : null;
+  }
+  async function cloudReadData(id){
+    var text = await gfetch('https://www.googleapis.com/drive/v3/files/' + id + '?alt=media', null, true);
+    var data = JSON.parse(text);
+    if(!data || !Array.isArray(data.transactions) || !Array.isArray(data.recurring)) throw new Error('bad-data');
+    return data;
+  }
   async function cloudCreate(){
     var boundary = 'lm' + Date.now();
     var body = '--' + boundary + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
@@ -1358,127 +1322,131 @@
     cloud.fileId = res.id;
   }
 
-  async function cloudLoad(isReconnect){
-    cloud.loading = true;
-    try{
-      var q = encodeURIComponent("name='" + CLOUD_FILE_NAME + "'");
-      var list = await gfetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=' + q + '&fields=files(id)');
-      if(list.files && list.files.length){
-        cloud.fileId = list.files[0].id;
-        if(isReconnect && cloudDirty()){
-          cloud.loading = false;
-          await cloudSave();
-          showToast('Modifiche fatte offline caricate su Google Drive.');
-          return;
-        }
-        var text = await gfetch('https://www.googleapis.com/drive/v3/files/' + cloud.fileId + '?alt=media', null, true);
-        var data = JSON.parse(text);
-        if(!data || !Array.isArray(data.transactions) || !Array.isArray(data.recurring)) throw new Error('bad-data');
-        var apply = async function(){
-          await applyCloudData(data);
-          setCloudDirty(false);
-          cloud.status = 'sincronizzato con Google Drive';
-          renderSyncBar();
-          showToast('Conti caricati dal tuo Google Drive.');
-        };
-        if(hasLocalData() && !isReconnect){
-          showConfirm('Nel tuo Google Drive ci sono già dei dati. Caricandoli sostituirai quelli presenti in questo browser. Procedere?',
-            apply, function(){ googleDisconnectKeepLocal(); });
-        } else {
-          await apply();
-        }
-      } else {
-        await cloudCreate();
-        cloud.status = 'sincronizzato con Google Drive';
-        renderSyncBar();
-        showToast('Collegato a Google Drive.');
-      }
-    }catch(e){
-      console.error('cloud load failed', e);
-      if(String(e.message) !== 'token-expired') showToast('Non riesco a leggere i dati da Google Drive. Riprova.');
-    }finally{
-      cloud.loading = false;
-    }
-  }
-
   async function applyCloudData(data){
     state.transactions = data.transactions;
     state.recurring = data.recurring;
     state.accounts = (data.accounts && typeof data.accounts === 'object') ? data.accounts : {};
     ACCOUNTS.forEach(function(a){ if(typeof state.accounts[a] !== 'number') state.accounts[a] = 0; });
-    cloud.loading = true;
-    await saveTransactions(); await saveRecurring(); await saveAccounts();
+    var before = state.transactions.length;
     await processRecurring();
-    cloud.loading = false;
-    renderAll();
+    return state.transactions.length !== before;
+  }
+
+  async function cloudLoad(){
+    cloud.loading = true;
+    var added = false;
+    try{
+      var id = await cloudFindFile();
+      if(id){
+        cloud.fileId = id;
+        added = await applyCloudData(await cloudReadData(id));
+        showToast('Conti caricati dal tuo Google Drive.');
+      } else {
+        await cloudCreate();
+        showToast('Spazio creato nel tuo Google Drive.');
+      }
+      cloud.ready = true; cloud.dirty = false; cloud.status = 'sincronizzato con Google Drive';
+      setGateNote('');
+    }catch(e){
+      console.error('cloud load failed', e);
+      cloud.token = null; cloud.fileId = null; cloud.ready = false;
+      setGateNote('Non riesco a leggere i dati dal tuo Google Drive. Riprova ad accedere.');
+    }finally{
+      cloud.loading = false;
+      renderSyncBar(); renderAll();
+    }
+    if(added) scheduleCloudSave();
   }
 
   function scheduleCloudSave(){
     if(cloud.loading) return;
-    if(!cloud.fileId || !cloudTokenValid()){ if(hadGoogleSession()) setCloudDirty(true); return; }
+    cloud.dirty = true;
+    if(!cloud.ready || !cloudTokenValid()){ renderSyncBar(); return; }
     clearTimeout(cloud.saveTimer);
     cloud.status = 'salvataggio…'; renderSyncBar();
-    cloud.saveTimer = setTimeout(cloudSave, 700);
+    cloud.saveTimer = setTimeout(function(){ cloudSave(false); }, 700);
   }
-  async function cloudSave(){
+
+  async function cloudSave(manual){
+    if(!cloud.fileId) return false;
+    clearTimeout(cloud.saveTimer);
     try{
+      cloud.status = 'salvataggio…'; renderSyncBar();
       await gfetch('https://www.googleapis.com/upload/drive/v3/files/' + cloud.fileId + '?uploadType=media', {
         method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: cloudPayload()
       });
-      setCloudDirty(false);
-      cloud.status = 'sincronizzato con Google Drive';
+      cloud.dirty = false;
+      var d = new Date();
+      cloud.status = 'salvato alle ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
       renderSyncBar();
+      if(manual === true) showToast('Salvato su Google Drive.');
+      return true;
     }catch(e){
       console.error('cloud save failed', e);
-      setCloudDirty(true);
-      showToast(String(e.message) === 'token-expired'
-        ? 'Sessione Google scaduta: riconnettiti per salvare le ultime modifiche.'
-        : 'Salvataggio su Google Drive non riuscito.');
+      cloud.status = 'modifiche non salvate';
       renderSyncBar();
+      showToast(String(e.message) === 'token-expired'
+        ? 'Sessione Google scaduta: tocca Riconnetti per salvare le modifiche.'
+        : 'Salvataggio su Google Drive non riuscito.');
+      return false;
     }
   }
 
-  async function googleSignOut(skipConfirm){
+  function driveSaveManual(){
+    if(!cloudTokenValid()){ showToast('Sessione Google scaduta: tocca Riconnetti.'); return; }
+    cloudSave(true);
+  }
+
+  function driveImportManual(){
+    if(!cloudTokenValid()){ showToast('Sessione Google scaduta: tocca Riconnetti.'); return; }
+    showConfirm('Importare l\'ultimo salvataggio da Drive? Sostituirà i dati che vedi ora, comprese le modifiche non ancora salvate.', async function(){
+      cloud.loading = true;
+      var added = false, ok = false;
+      try{
+        var id = cloud.fileId || await cloudFindFile();
+        if(!id) throw new Error('no-file');
+        cloud.fileId = id;
+        added = await applyCloudData(await cloudReadData(id));
+        cloud.dirty = false; cloud.status = 'importato da Drive'; ok = true;
+      }catch(e){
+        console.error('drive import failed', e);
+      }finally{
+        cloud.loading = false;
+      }
+      renderSyncBar(); renderAll();
+      showToast(ok ? 'Dati aggiornati dall\'ultimo salvataggio su Drive.' : 'Importazione da Drive non riuscita.');
+      if(added) scheduleCloudSave();
+    });
+  }
+
+  async function googleSignOut(){
     var doIt = async function(){
+      if(cloud.dirty && cloudTokenValid()) await cloudSave(false);
       clearTimeout(cloud.saveTimer);
       try{ if(cloud.token && window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(cloud.token, function(){}); }catch(e){}
       cloud.token = null; cloud.fileId = null; cloud.email = null; cloud.status = '';
-      try{
-        ['ft:transactions','ft:recurring','ft:accounts','ft:google-user','ft:cloud-dirty'].forEach(function(k){ localStorage.removeItem(k); });
-      }catch(e){}
+      cloud.ready = false; cloud.dirty = false;
       state.transactions = []; state.recurring = []; state.accounts = {};
       ACCOUNTS.forEach(function(a){ state.accounts[a] = 0; });
+      setGateNote('');
       renderSyncBar(); renderAll();
     };
-    if(skipConfirm === true) return doIt();
-    showConfirm('Uscire da Google? I dati restano nel tuo Drive e vengono rimossi da questo browser.', doIt);
-  }
-
-  function googleDisconnectKeepLocal(){
-    clearTimeout(cloud.saveTimer);
-    try{ if(cloud.token && window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(cloud.token, function(){}); }catch(e){}
-    cloud.token = null; cloud.fileId = null; cloud.email = null; cloud.status = '';
-    try{ localStorage.removeItem('ft:google-user'); localStorage.removeItem('ft:cloud-dirty'); }catch(e){}
-    renderSyncBar();
-    showToast('Collegamento a Google annullato. Restano i dati di questo browser.');
+    showConfirm('Uscire da Google? I dati restano nel tuo Drive e spariscono da questa pagina.', doIt);
   }
 
   document.getElementById('btnGoogleIn').addEventListener('click', googleSignIn);
-  document.getElementById('btnGoogleOut').addEventListener('click', function(){ googleSignOut(false); });
+  document.getElementById('btnGoogleReconnect').addEventListener('click', googleSignIn);
+  document.getElementById('btnGoogleOut').addEventListener('click', googleSignOut);
+  document.getElementById('btnDriveSave').addEventListener('click', driveSaveManual);
+  document.getElementById('btnDriveLoad').addEventListener('click', driveImportManual);
 
   /* ---------- init ---------- */
   (async function init(){
     await loadData();
-    await processRecurring();
     document.getElementById('loadingOverlay').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     renderAll();
     renderSyncBar();
-    if(hadGoogleSession() && cloudConfigured()){
-      window.addEventListener('load', function(){
-        setTimeout(function(){ try{ if(initTokenClient()) cloud.tokenClient.requestAccessToken({ prompt:'' }); }catch(e){} }, 400);
-      });
-    }
   })();
 
 })();

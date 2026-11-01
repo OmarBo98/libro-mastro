@@ -351,6 +351,60 @@
   .sync-btn.big{padding:12px 18px;font-size:14px;border-radius:var(--radius-sm);}
   .sync-drive{display:flex;gap:8px;flex-wrap:wrap;width:100%;}
   .sync-drive .sync-btn{flex:1 1 150px;border-radius:var(--radius-sm);padding:8px 10px;line-height:1.3;}
+  /* ---------- estratti conto ---------- */
+  [hidden]{display:none !important;}
+  .bottom-nav .nav-btn{font-size:10.5px;}
+  .stm-drop{
+    display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;
+    padding:22px 16px;border:1.5px dashed var(--gold);border-radius:var(--radius);
+    background:var(--paper-card);cursor:pointer;margin-bottom:14px;
+  }
+  .stm-drop:hover,.stm-drop.drag{background:var(--gold-soft);}
+  .stm-drop-icon{font-size:22px;color:var(--gold);line-height:1;}
+  .stm-drop-title{font-size:14.5px;font-weight:600;}
+  .stm-drop-sub{font-size:12px;color:var(--ink-soft);}
+  .stm-status{font-size:13px;color:var(--ink-soft);margin:0 0 14px;line-height:1.5;}
+  .stm-status.err{color:var(--expense);}
+  .stm-pass{margin:0 0 16px;}
+  .stm-pass label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:500;}
+  .stm-pass-row{display:flex;gap:8px;}
+  .stm-pass-row input{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;font-size:15px;color:var(--ink);}
+  .stm-card{
+    background:var(--paper-card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:16px;
+  }
+  .stm-file{font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);overflow-wrap:anywhere;}
+  .stm-facts{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:4px;}
+  .stm-fact span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);}
+  .stm-fact b{font-family:var(--font-mono);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .stm-fact b.income{color:var(--income);}
+  .stm-fact b.expense{color:var(--expense);}
+  .stm-check{font-size:12.5px;margin:12px 0 0;line-height:1.45;padding:8px 10px;border-radius:var(--radius-sm);}
+  .stm-check.ok{background:var(--income-soft);color:var(--income);}
+  .stm-check.warn{background:var(--expense-soft);color:var(--expense);}
+  .stm-list-head{display:flex;justify-content:space-between;align-items:baseline;margin:4px 0 6px;}
+  .stm-list-head h3{font-family:var(--font-display);font-size:14px;margin:0;}
+  .stm-link{background:none;border:none;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:4px 0;}
+  #stmtRows{margin-bottom:18px;}
+  .stm-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line);}
+  .stm-row:last-child{border-bottom:none;}
+  .stm-row.off{opacity:.5;}
+  .stm-row input[type=checkbox]{width:18px;height:18px;margin:2px 0 0;flex-shrink:0;accent-color:var(--ink);}
+  .stm-main{flex:1;min-width:0;}
+  .stm-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+  .stm-desc{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .stm-amt{font-family:var(--font-mono);font-size:14px;font-weight:500;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .stm-amt.income{color:var(--income);}
+  .stm-amt.expense{color:var(--expense);}
+  .stm-sub{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px;font-size:11.5px;color:var(--ink-soft);}
+  .stm-sub select{
+    font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);max-width:170px;
+  }
+  .stm-sub select.unsure{border-color:var(--gold);background:var(--gold-soft);}
+  .stm-flip{border:1px solid var(--line);background:transparent;border-radius:8px;font-size:11.5px;padding:3px 7px;color:var(--ink-soft);}
+  .stm-flip:hover{border-color:var(--ink);color:var(--ink);}
+  .badge.warn{border-color:var(--gold);color:#7a6324;background:var(--gold-soft);}
+  .stm-actions{position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));background:var(--paper-card);padding:8px 0;margin-top:6px;}
 </style>
 </head>
 <body>
@@ -456,6 +510,65 @@
 
       <div id="accountsList"></div>
     </div>
+
+    <div class="page hidden" id="page-estratti">
+      <h2 class="page-title">Estratti conto</h2>
+      <p class="page-note">Carica il PDF dell'estratto conto: riconosco la banca, leggo entrate e uscite e aggiorno il conto. Il file viene letto qui sul tuo dispositivo e non viene salvato né inviato altrove.</p>
+
+      <label class="stm-drop" for="stmtFileInput" id="stmtDrop">
+        <span class="stm-drop-icon">⇪</span>
+        <span class="stm-drop-title">Scegli il PDF dell'estratto conto</span>
+        <span class="stm-drop-sub">BCC, BBVA, Revolut, Wise, Trade Republic, Amex…</span>
+      </label>
+      <input type="file" id="stmtFileInput" accept="application/pdf,.pdf" style="display:none">
+
+      <p class="stm-status" id="stmtStatus" hidden></p>
+
+      <div class="stm-pass" id="stmtPassBox" hidden>
+        <label for="stmtPassword">Il PDF è protetto da password</label>
+        <div class="stm-pass-row">
+          <input type="password" id="stmtPassword" autocomplete="off" placeholder="Password del PDF">
+          <button class="sync-btn" id="stmtPassBtn" type="button">Apri</button>
+        </div>
+      </div>
+
+      <div id="stmtResult" hidden>
+        <section class="stm-card">
+          <div class="stm-file" id="stmtFileName"></div>
+          <div class="field" style="margin:10px 0 6px;">
+            <label for="stmtAccount">Conto dell'estratto</label>
+            <select id="stmtAccount"></select>
+            <p class="hint" id="stmtBankHint"></p>
+          </div>
+          <div class="stm-facts" id="stmtFacts"></div>
+          <p class="stm-check" id="stmtCheck" hidden></p>
+        </section>
+
+        <div class="stm-list-head">
+          <h3>Movimenti trovati</h3>
+          <button class="stm-link" id="stmtToggleAll" type="button">Deseleziona tutti</button>
+        </div>
+        <div id="stmtRows"></div>
+
+        <section class="stm-card stm-align">
+          <label class="switch-row">
+            <span>Allinea il saldo al saldo finale dell'estratto</span>
+            <span class="switch"><input type="checkbox" id="stmtAlign"><span class="switch-slider"></span></span>
+          </label>
+          <div class="field" style="margin:10px 0 0;">
+            <label for="stmtClosing" id="stmtClosingLabel">Saldo finale dell'estratto (€)</label>
+            <input type="number" id="stmtClosing" step="0.01" inputmode="decimal">
+          </div>
+          <p class="hint" id="stmtBalancePreview"></p>
+        </section>
+
+        <p class="form-error" id="stmtError" style="display:none"></p>
+        <div class="modal-actions stm-actions">
+          <button class="btn-ghost" id="stmtCancel" type="button">Annulla</button>
+          <button class="btn-solid" id="stmtImport" type="button">Importa</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <nav class="bottom-nav">
@@ -470,6 +583,10 @@
     <button class="nav-btn" data-page="patrimonio">
       <svg viewBox="0 0 24 24" stroke-width="1.8"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M2 10.5h20"/><circle cx="17" cy="14.5" r="1.3" fill="currentColor" stroke="none"/></svg>
       Patrimonio
+    </button>
+    <button class="nav-btn" data-page="estratti">
+      <svg viewBox="0 0 24 24" stroke-width="1.8"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
+      Estratti
     </button>
   </nav>
 </div>
@@ -1120,6 +1237,7 @@
     document.getElementById('page-dashboard').classList.toggle('hidden', page !== 'dashboard');
     document.getElementById('page-charts').classList.toggle('hidden', page !== 'charts');
     document.getElementById('page-patrimonio').classList.toggle('hidden', page !== 'patrimonio');
+    document.getElementById('page-estratti').classList.toggle('hidden', page !== 'estratti');
     if(page === 'charts') renderCharts();
     if(page === 'patrimonio') renderAccounts();
   }
@@ -1218,6 +1336,714 @@
   document.querySelectorAll('.nav-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ switchPage(btn.getAttribute('data-page')); });
   });
+
+
+  /* ---------- estratti conto PDF ----------
+     Il PDF viene letto qui, nel browser, con pdf.js: non viene salvato né inviato
+     da nessuna parte. Dal testo si ricavano banca, movimenti e saldi; l'utente
+     controlla l'anteprima prima che qualcosa entri nel libro mastro. */
+  var BANK_PATTERNS = [
+    { account:'BCC', re:/banca di credito cooperativo|credito cooperativo|\bbcc\b|iccrea/gi },
+    { account:'BBVA', re:/\bbbva\b|banco bilbao/gi },
+    { account:'Revolut', re:/revolut/gi },
+    { account:'Wise', re:/\bwise\b|transferwise/gi },
+    { account:'Traderepublic', re:/trade\s?republic/gi },
+    { account:'Amex', re:/american express|\bamex\b/gi },
+    { account:'PuPrime', re:/pu\s?prime/gi },
+    { account:'Arangio', re:/arangio/gi }
+  ];
+  var CARD_ACCOUNTS = { 'Amex': true };
+
+  function stmtDetectBank(firstPageText, fullText){
+    /* la banca è quella nominata per prima nella prima pagina (intestazione) */
+    var best = null, bestIdx = Infinity, bestAll = 0;
+    BANK_PATTERNS.forEach(function(b){
+      var m = new RegExp(b.re.source, 'i').exec(firstPageText);
+      var all = (fullText.match(b.re) || []).length;
+      var idx = m ? m.index : Infinity;
+      if(idx < bestIdx || (idx === Infinity && bestIdx === Infinity && all > bestAll)){ best = b.account; bestIdx = idx; bestAll = all; }
+    });
+    return (bestIdx === Infinity && !bestAll) ? null : best;
+  }
+
+  var MONTHS = {
+    gen:1,gennaio:1,jan:1,january:1, feb:2,febbraio:2,february:2, mar:3,marzo:3,march:3,
+    apr:4,aprile:4,april:4, mag:5,maggio:5,may:5, giu:6,giugno:6,jun:6,june:6,
+    lug:7,luglio:7,jul:7,july:7, ago:8,agosto:8,aug:8,august:8, set:9,sett:9,settembre:9,sep:9,sept:9,september:9,
+    ott:10,ottobre:10,oct:10,october:10, nov:11,novembre:11,november:11, dic:12,dicembre:12,dec:12,december:12
+  };
+  var MONTH_ALT = 'gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre|january|february|march|april|june|july|august|september|october|november|december|sept|sett|gen|jan|feb|mar|apr|mag|may|giu|jun|lug|jul|ago|aug|set|sep|ott|oct|nov|dic|dec';
+  var DATE_RES = [
+    { re:/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4}|\d{2})(?!\d)/, f:function(m){ return [m[3], m[2], m[1]]; } },
+    { re:/^(\d{4})-(\d{2})-(\d{2})(?!\d)/, f:function(m){ return [m[1], m[2], m[3]]; } },
+    { re:new RegExp('^(\\d{1,2})\\s+(' + MONTH_ALT + ')\\.?\\s+(\\d{4})(?!\\d)', 'i'), f:function(m){ return [m[3], MONTHS[m[2].toLowerCase()], m[1]]; } },
+    { re:new RegExp('^(' + MONTH_ALT + ')\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})(?!\\d)', 'i'), f:function(m){ return [m[3], MONTHS[m[1].toLowerCase()], m[2]]; } },
+    { re:new RegExp('^(\\d{1,2})\\s+(' + MONTH_ALT + ')\\.?(?![a-zà])', 'i'), f:function(m){ return [null, MONTHS[m[2].toLowerCase()], m[1]]; } },
+    { re:/^(\d{1,2})[\/.](\d{1,2})(?![\/.\d,])/, f:function(m){ return [null, m[2], m[1]]; } }
+  ];
+
+  function stmtParseDateAt(text, defaultYear){
+    for(var i = 0; i < DATE_RES.length; i++){
+      var m = text.match(DATE_RES[i].re);
+      if(!m) continue;
+      var p = DATE_RES[i].f(m);
+      var y = p[0] == null ? defaultYear : Number(p[0]);
+      if(y < 100) y += 2000;
+      var mo = Number(p[1]), d = Number(p[2]);
+      if(!y || mo < 1 || mo > 12 || d < 1 || d > 31) continue;
+      return { iso: y + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0'), len: m[0].length, hasYear: p[0] != null };
+    }
+    return null;
+  }
+
+  /* importi: 1.234,56 · 1234,56 · 1,234.56 · 1234.56 · con segno, €, CR/DR */
+  var AMOUNT_RE = /([+\-−–]\s?)?(?:€|EUR)?\s?(\d{1,3}(?:[.,'\u00a0 ]\d{3})+|\d+)([.,])(\d{2})(?!\d)(\s?(?:€|EUR))?(\s?-(?![\d]))?(\s?(?:CR|DR|C|D)\b)?/g;
+
+  function stmtFindAmounts(item){
+    var out = [], m, s = item.str;
+    AMOUNT_RE.lastIndex = 0;
+    while((m = AMOUNT_RE.exec(s))){
+      var intPart = m[2], sep = m[3];
+      var groups = intPart.match(/[.,'\u00a0 ]/);
+      if(groups && groups[0] === sep) continue; /* es. 1.234.56: ambiguo */
+      var before = s.slice(0, m.index);
+      if(/[\d\/]$/.test(before)) continue; /* parte di una data o di un codice */
+      var after = s.slice(m.index + m[0].length);
+      if(/^[\/.]\d/.test(after) || /^:\d/.test(after)) continue; /* data o ora */
+      var value = Number(intPart.replace(/[.,'\u00a0 ]/g, '') + '.' + m[4]);
+      var neg = !!(m[1] && /[\-−–]/.test(m[1])) || !!m[6] || /DR|^\s?D$/.test(m[7] || '');
+      var cr = /CR|^\s?C$/.test(m[7] || '');
+      var pos = !!(m[1] && /\+/.test(m[1])) || cr;
+      var hasDecimalComma = sep === ',';
+      /* posizione x approssimata dentro l'elemento di testo */
+      var frac0 = s.length ? m.index / s.length : 0, frac1 = s.length ? (m.index + m[0].length) / s.length : 1;
+      out.push({ value:value, neg:neg, pos:pos, cr:cr, signed:neg || pos, comma:hasDecimalComma,
+        x0: item.x + item.w * frac0, x1: item.x + item.w * frac1, raw:m[0],
+        solo: s.trim().length - m[0].trim().length <= 4 });
+    }
+    return out;
+  }
+
+  var OUT_HEAD = /^(dare|addebiti|addebito|uscite|in uscita|denaro in uscita|importi in uscita|money out|paid out|debit|debits|debiti|prelievi|outgoing|uscita)$/i;
+  var IN_HEAD = /^(avere|accrediti|accredito|entrate|in entrata|denaro in entrata|importi in entrata|money in|paid in|credit|credits|crediti|versamenti|incoming|entrata)$/i;
+  var BAL_HEAD = /^(saldo|balance|saldo progressivo|saldo contabile|saldo disponibile)$/i;
+  var AMT_HEAD = /^(importo|importi|amount|movimento|importo eur|importo €|importo \(eur\)|importo in eur)$/i;
+
+  function stmtFindHeader(line){
+    var cols = {};
+    line.items.forEach(function(it){
+      var t = it.str.trim().replace(/\s+/g, ' ').replace(/[:()€]+$/,'').trim();
+      var c = { x0: it.x, x1: it.x + it.w };
+      if(OUT_HEAD.test(t)) cols.out = c;
+      else if(IN_HEAD.test(t)) cols['in'] = c;
+      else if(BAL_HEAD.test(t)) cols.bal = c;
+      else if(AMT_HEAD.test(t)) cols.amt = c;
+    });
+    if((cols.out && cols['in']) || ((cols.out || cols['in'] || cols.amt) && cols.bal)) return cols;
+    return null;
+  }
+
+  function colDist(a, c){
+    return Math.min(Math.abs(a.x1 - c.x1), Math.abs((a.x0 + a.x1) / 2 - (c.x0 + c.x1) / 2), Math.abs(a.x0 - c.x0));
+  }
+
+  var SKIP_LINE = /\b(totale|totali|total|riepilogo|pagina \d|page \d|di \d+ pagine|estratto conto n|iban\b|bic\b|swift)\b/i;
+  var OPEN_RE = /saldo (iniziale|precedente|di apertura|inizio|a inizio)|opening balance|starting balance|balance brought forward|saldo riportato/i;
+  var CLOSE_RE = /saldo (finale|contabile finale|di chiusura|fine|a fine|disponibile finale|liquido finale)|closing balance|ending balance|nuovo saldo|saldo attuale/i;
+  var GENERIC_BAL_RE = /^\s*saldo\b|\bsaldo (al|contabile al|disponibile al)\b|balance (on|as of|at)\b/i;
+  var INCOME_WORDS = /accredit|a vostro favore|a vs\.? favore|a tuo favore|bonifico (in entrata|ricevuto|da)|stipend|emolument|retribuz|salary|payroll|versamento|rimborso|refund|storno|interessi a credito|dividend|cedola|cashback|incoming|received from|money added|ricevuto da|giroconto da/i;
+  var TRANSFER_WORDS = /giroconto|prelievo|prelevamento|bancomat|\batm\b|cash withdrawal|girofondi|trasferimento (tra|fra) (i )?(miei )?conti|ricarica (da|revolut|wise|carta|prepagata|conto)|top[\- ]?up|exchanged to|cambio valuta|pagamento (estratto conto )?american express|addebito american express|saldo carta di credito|pagamento ricevuto|payment received|grazie per il pagamento|to (your|my) (eur|usd|gbp)|trasferimento a me stesso|transfer to (own|self)/i;
+
+  var CATEGORY_RULES = [
+    ['Groceries', /esselunga|conad|lidl|carrefour|eurospin|despar|interspar|\bcoop\b|\bmd\b|aldi|penny|\bpam\b|crai|sigma|todis|famila|decò|deco market|ipercoop|supermerc|alimentari|market|naturasì|tigre|ard discount|gros/i],
+    ['Cibo fuori', /ristorant|pizzer|trattori|osteria|sushi|burger|mcdonald|kfc|\bbar\b|caff[eè]|pasticc|gelater|bistrot|pub\b|deliveroo|glovo|just ?eat|uber ?eats|starbucks|autogrill|rosticc|panific|kebab|poke/i],
+    ['Abbigliamento', /zara|h&m|\bhm\b|ovs|bershka|pull ?& ?bear|primark|uniqlo|zalando|calzedonia|intimissimi|tezenis|foot ?locker|nike|adidas|benetton|abbigliam|scarpe|calzatur|shein|vinted/i],
+    ['Svago e Sport', /decathlon|palestra|gym|fitness|cinema|ticketone|vivaticket|teatro|museo|playstation|steam|nintendo|xbox|sport|piscina|padel|tennis|concert|evento|discoteca/i],
+    ['Articoli per la casa', /ikea|leroy|brico|obi\b|mediaworld|unieuro|euronics|expert|maison du monde|tedi|\baction\b|\bcasa\b|arredament|ferrament|amazon|amzn/i],
+    ['Affitto', /affitto|locazione|canone (di )?locaz|pigione|rent\b/i],
+    ['Utenze', /enel|a2a|hera|iren|edison|eni plenitude|plenitude|sorgenia|acea|servizio elettrico|bolletta|luce|\bgas\b|acqua|acquedotto|tim\b|telecom|vodafone|iliad|fastweb|windtre|wind tre|\bwind\b|ho\.? mobile|kena|very mobile|sky\b|tari\b|rifiuti/i],
+    ['Regali e cose offerte', /regalo|regali|gift|fiorai|fiori|profumeria|douglas|sephora|gioielleri|pandora|libreria|feltrinelli|mondadori/i],
+    ['Contribuzioni', /competenze di chiusura|interessi passivi|f24|inps|inail|agenzia (delle )?entrate|tribut|imposta|\btasse?\b|bollo (su|c\/c|conto)|imposta di bollo|commissioni|canone (conto|mensile)|spese (tenuta|conto)|contribut|donazion|offerta/i],
+    ['Viaggi', /ryanair|easyjet|wizz|ita airways|alitalia|volotea|vueling|lufthansa|trenitalia|italo|flixbus|booking|airbnb|expedia|hotel|b&b|ostello|hostel|aeroporto|airport|traghett|caronte|tirrenia|gnv|grimaldi/i],
+    ['Parcheggi', /parchegg|parking|easypark|mycicero|saba|apcoa|telepass pay sosta|sosta|strisce blu/i],
+    ['Benzina', /\beni\b|enilive|\bq8\b|\bip\b|ip matic|tamoil|esso|agip|\bapi\b|carburant|benzin|rifornim|distributore|stazione di servizio|total ?erg|erg\b|shell|repsol/i],
+    ['Costi dell\'auto', /telepass|autostrad|pedaggi|assicuraz|rca|bollo auto|aci\b|officina|meccanic|gommist|pneumatic|carrozzer|revisione|autoricambi|lavaggio auto|unipol|generali|allianz|prima assicurazioni|verti|genertel|linear/i],
+    ['Abbonamenti', /netflix|spotify|disney|prime video|amazon prime|apple\.com|itunes|icloud|google (one|storage|play)|youtube premium|dazn|now tv|chatgpt|openai|anthropic|claude\.ai|microsoft|office 365|adobe|canva|dropbox|patreon|abbonament|subscription|audible/i],
+    ['Salute', /farmac|parafarm|medic|ospedal|asp\b|asl\b|ticket sanit|dentist|odontoiatr|ottic|analisi|laborator|clinica|poliambulator|fisioterap|veterinar/i],
+    ['Imprevisti', /multa|sanzion|contravvenz|penale/i]
+  ];
+  var INCOME_RULES = [
+    ['Stipendio', /stipend|emolument|retribuz|salary|payroll|cedolino|competenze|busta paga/i],
+    ['Trading', /dividend|cedola|trading|interessi|interest|trade republic|pu ?prime|broker|vendita titoli|plusvalenz|crypto|bitcoin/i],
+    ['Roy', /\broy\b|royalt/i]
+  ];
+
+  function stmtGuessCategory(type, desc){
+    var rules = type === 'income' ? INCOME_RULES : CATEGORY_RULES;
+    for(var i = 0; i < rules.length; i++){ if(rules[i][1].test(desc)) return { category: rules[i][0], sure: true }; }
+    return { category: type === 'income' ? 'Stipendio' : 'Imprevisti', sure: false };
+  }
+
+  function stmtIsTransfer(desc, bankAccount){
+    if(TRANSFER_WORDS.test(desc)) return true;
+    return BANK_PATTERNS.some(function(b){ return b.account !== bankAccount && new RegExp(b.re.source, 'i').test(desc); });
+  }
+
+  function stmtCleanDesc(s){
+    return s.replace(/\s+/g, ' ').replace(/^[\s\-–·|:]+|[\s\-–·|:]+$/g, '').trim();
+  }
+
+  /* lines: [{page, y, items:[{str,x,w}]}] già ordinate per pagina, dall'alto, da sinistra */
+  function stmtParse(lines, bankAccount){
+    var isCard = !!CARD_ACCOUNTS[bankAccount];
+    /* anno di riferimento per date senza anno */
+    var yearCount = {};
+    lines.forEach(function(l){
+      var t = l.items.map(function(i){ return i.str; }).join(' ');
+      (t.match(/\b(20\d{2})\b/g) || []).forEach(function(y){ yearCount[y] = (yearCount[y] || 0) + 1; });
+    });
+    var defaultYear = Number(Object.keys(yearCount).sort(function(a,b){ return yearCount[b] - yearCount[a]; })[0]) || new Date().getFullYear();
+
+    var header = null, rows = [], balances = [], last = null;
+    var anySignedNeg = false, pendingDate = null;
+
+    lines.forEach(function(line){
+      var h = stmtFindHeader(line);
+      if(h){ header = h; last = null; return; }
+      var text = line.items.map(function(i){ return i.str; }).join(' ').replace(/\s+/g, ' ').trim();
+      if(!text) return;
+
+      var amounts = [];
+      line.items.forEach(function(it){ amounts = amounts.concat(stmtFindAmounts(it)); });
+      /* se ci sono importi in colonna propria, ignoro quelli citati nella descrizione */
+      var soloAmts = amounts.filter(function(a){ return a.solo; });
+      if(soloAmts.length) amounts = soloAmts;
+
+      /* righe di saldo */
+      var isOpen = OPEN_RE.test(text), isClose = CLOSE_RE.test(text), isGen = GENERIC_BAL_RE.test(text);
+      if((isOpen || isClose || isGen) && amounts.length){
+        var a = amounts[amounts.length - 1];
+        var v = a.neg ? -a.value : a.value;
+        if(isCard) v = (a.neg || a.cr) ? a.value : -a.value; /* carta: il saldo è un debito */
+        if(header && header.out && header['in'] && !a.signed){
+          if(colDist(a, header.out) < colDist(a, header['in'])) v = -a.value;
+        }
+        var dm = text.match(/(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})|(\d{1,2}\s+(?:[a-zà]+)\.?\s+\d{4})/i);
+        var bd = null;
+        if(dm){
+          var idx = text.indexOf(dm[0]);
+          var pd = stmtParseDateAt(text.slice(idx), defaultYear);
+          if(pd) bd = pd.iso;
+        }
+        balances.push({ kind: isOpen ? 'open' : (isClose ? 'close' : 'generic'), value: v, date: bd });
+        last = null;
+        return;
+      }
+      if(SKIP_LINE.test(text)){ last = null; return; }
+
+      /* data a inizio riga (primo elemento) */
+      var firstStr = line.items[0].str.trim();
+      var d = stmtParseDateAt(firstStr, defaultYear) || stmtParseDateAt(text, defaultYear);
+      var startsWithDate = d && (text.indexOf(firstStr) === 0);
+
+      /* riga con la sola data: il movimento è sulla riga seguente (es. Wise) */
+      if(d && startsWithDate && !amounts.length && text.length - d.len <= 3){ pendingDate = { iso: d.iso, page: line.page, y: line.y }; last = null; return; }
+      if((!d || !startsWithDate) && amounts.length && pendingDate && pendingDate.page === line.page && Math.abs(pendingDate.y - line.y) < 30){
+        var prow = { date: pendingDate.iso, desc: stmtCleanDesc(amounts.reduce(function(t, a){ return t.replace(a.raw.trim(), ' '); }, text).replace(/\b(EUR|€)\b/g, ' ')), amounts: amounts, page: line.page, y: line.y, extra: 0, header: header };
+        if(amounts.some(function(a){ return a.neg; })) anySignedNeg = true;
+        rows.push(prow); last = prow; pendingDate = null;
+        return;
+      }
+      if(!d || !startsWithDate){
+        /* riga di continuazione della descrizione */
+        if(/^(19|20)\d{2}$/.test(text)) return; /* anno su riga a parte (es. Trade Republic) */
+        if(last && !amounts.length && line.page === last.page && Math.abs(last.y - line.y) < 30 && last.extra < 2 && text.length < 120){
+          last.desc += ' ' + text; last.extra++;
+        }
+        return;
+      }
+      if(!amounts.length){ last = null; return; }
+
+      /* descrizione: testo senza date iniziali e senza importi */
+      var rest = text.slice(d.len).trim();
+      var d2 = stmtParseDateAt(rest, defaultYear);
+      if(d2) rest = rest.slice(d2.len).trim();
+      var desc = rest;
+      amounts.forEach(function(a){ desc = desc.replace(a.raw.trim(), ' '); });
+      desc = desc.replace(/\b(EUR|€)\b/g, ' ');
+
+      var row = { date: d.iso, desc: stmtCleanDesc(desc), amounts: amounts, page: line.page, y: line.y, extra: 0, header: header };
+      if(amounts.some(function(a){ return a.neg; })) anySignedNeg = true;
+      rows.push(row);
+      last = row;
+    });
+
+    /* segno di ogni movimento */
+    var prevBal = null;
+    var openB = balances.filter(function(b){ return b.kind === 'open'; })[0];
+    if(openB) prevBal = openB.value;
+    var txs = [];
+    rows.forEach(function(r){
+      var amts = r.amounts.slice();
+      var hdr = r.header;
+      var amt = null, type = null, bal = null, how = '';
+
+      if(hdr && hdr.bal && amts.length >= 2){
+        var bi = 0, bd = Infinity;
+        amts.forEach(function(a, i){ var dd = colDist(a, hdr.bal); if(dd < bd){ bd = dd; bi = i; } });
+        if(bi === amts.length - 1){ bal = amts[bi]; amts.splice(bi, 1); }
+      } else if(!hdr && amts.length >= 2){
+        bal = amts[amts.length - 1]; amts = amts.slice(0, -1);
+      }
+      if(!amts.length) return;
+      var a = amts[amts.length - 1];
+      if(amts.length >= 2 && hdr && hdr.out && hdr['in']){
+        /* entrambe le colonne piene: prendo quella non nulla */
+        var nz = amts.filter(function(x){ return x.value > 0; });
+        if(nz.length) a = nz[nz.length - 1];
+      }
+      amt = a.value;
+      if(!(amt > 0)) return;
+
+      if(a.signed){
+        type = a.neg ? 'expense' : 'income'; how = 'segno';
+        if(isCard) type = (a.neg || a.cr) ? 'income' : 'expense';
+      } else if(hdr && hdr.out && hdr['in']){
+        type = colDist(a, hdr.out) <= colDist(a, hdr['in']) ? 'expense' : 'income'; how = 'colonna';
+      }
+      var balVal = bal ? (bal.neg ? -bal.value : bal.value) : null;
+      if(!type && balVal != null && prevBal != null){
+        if(Math.abs(prevBal - amt - balVal) < 0.011){ type = 'expense'; how = 'saldo'; }
+        else if(Math.abs(prevBal + amt - balVal) < 0.011){ type = 'income'; how = 'saldo'; }
+      }
+      if(!type && anySignedNeg && !isCard){ type = 'income'; how = 'segno'; }
+      if(!type && isCard){ type = /pagamento ricevuto|payment received|rimborso|refund|storno|accredito/i.test(r.desc) ? 'income' : 'expense'; how = 'carta'; }
+      if(!type){ type = INCOME_WORDS.test(r.desc) ? 'income' : 'expense'; how = 'parole'; }
+      if(balVal != null) prevBal = balVal;
+
+      var desc = stmtCleanDesc(r.desc) || (type === 'income' ? 'Entrata' : 'Uscita');
+      var guess = stmtGuessCategory(type, desc);
+      txs.push({ date: r.date, desc: desc, amount: Math.round(amt * 100) / 100, type: type, how: how,
+        category: guess.category, categorySure: guess.sure, transfer: stmtIsTransfer(desc, bankAccount), balanceAfter: balVal });
+    });
+
+    /* controllo con i saldi progressivi: se il segno dedotto contraddice il saldo, correggo */
+    var opening = openB ? openB.value : null;
+    var closeB = balances.filter(function(b){ return b.kind === 'close'; }).pop();
+    var closing = closeB ? closeB.value : null;
+    var closingDate = closeB && closeB.date ? closeB.date : null;
+    var dates = txs.map(function(t){ return t.date; }).sort();
+    var minD = dates[0] || null, maxD = dates[dates.length - 1] || null;
+    balances.filter(function(b){ return b.kind === 'generic'; }).forEach(function(b){
+      if(b.date && minD && b.date <= minD && opening == null) opening = b.value;
+      else if(b.date && maxD && b.date >= maxD){ closing = b.value; closingDate = b.date; }
+    });
+    if(closing == null){
+      /* ultimo saldo progressivo in ordine di data */
+      var withBal = txs.filter(function(t){ return t.balanceAfter != null; });
+      if(withBal.length){
+        var asc = withBal[0].date <= withBal[withBal.length - 1].date;
+        var lt = asc ? withBal[withBal.length - 1] : withBal[0];
+        closing = lt.balanceAfter; closingDate = lt.date;
+      }
+    }
+    if(!closingDate) closingDate = maxD;
+
+    var check = null;
+    if(opening != null && closing != null){
+      var net = txs.reduce(function(s, t){ return s + (t.type === 'income' ? t.amount : -t.amount); }, 0);
+      check = Math.abs(opening + net - closing) < 0.02;
+    }
+    return { txs: txs, opening: opening, closing: closing, closingDate: closingDate, from: minD, to: maxD, check: check };
+  }
+
+  /* testo del PDF raggruppato in righe, con la posizione x di ogni pezzo */
+  async function stmtExtractLines(pdf){
+    var lines = [];
+    for(var p = 1; p <= pdf.numPages; p++){
+      var page = await pdf.getPage(p);
+      var content = await page.getTextContent();
+      var items = content.items.filter(function(it){ return it.str && it.str.trim(); }).map(function(it){
+        return { str: it.str, x: it.transform[4], y: it.transform[5], w: it.width || 0, h: Math.abs(it.transform[3]) || it.height || 8 };
+      });
+      items.sort(function(a, b){ return (b.y - a.y) || (a.x - b.x); });
+      var pageLines = [];
+      items.forEach(function(it){
+        var ln = null;
+        for(var i = pageLines.length - 1; i >= 0 && i >= pageLines.length - 3; i--){
+          if(Math.abs(pageLines[i].y - it.y) <= Math.max(2, it.h * 0.45)){ ln = pageLines[i]; break; }
+        }
+        if(!ln){ ln = { page: p, y: it.y, items: [] }; pageLines.push(ln); }
+        ln.items.push(it);
+      });
+      pageLines.forEach(function(ln){
+        ln.items.sort(function(a, b){ return a.x - b.x; });
+        /* unisco i pezzi molto vicini (parole spezzate dal PDF) */
+        var merged = [];
+        ln.items.forEach(function(it){
+          var prev = merged[merged.length - 1];
+          var gap = prev ? it.x - (prev.x + prev.w) : Infinity;
+          if(prev && gap < it.h * 0.3){
+            prev.str += (gap > it.h * 0.12 ? ' ' : '') + it.str;
+            prev.w = it.x + it.w - prev.x;
+          } else {
+            merged.push({ str: it.str, x: it.x, w: it.w, h: it.h });
+          }
+        });
+        ln.items = merged;
+        lines.push(ln);
+      });
+    }
+    return lines;
+  }
+
+  /* ---------- pagina Estratti: caricamento, anteprima, importazione ---------- */
+  var PDFJS_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  var pdfjsPromise = null;
+  var stmt = null;          /* estratto in lavorazione, solo in memoria */
+  var stmtFile = null;      /* ArrayBuffer del PDF, per riaprirlo con la password */
+
+  function loadPdfJs(){
+    if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if(!pdfjsPromise){
+      pdfjsPromise = new Promise(function(resolve, reject){
+        var s = document.createElement('script');
+        s.src = PDFJS_SRC;
+        s.onload = function(){
+          if(!window.pdfjsLib){ pdfjsPromise = null; reject(new Error('pdfjs-missing')); return; }
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+          resolve(window.pdfjsLib);
+        };
+        s.onerror = function(){ pdfjsPromise = null; reject(new Error('pdfjs-load')); };
+        document.head.appendChild(s);
+      });
+    }
+    return pdfjsPromise;
+  }
+
+  function stmtSetStatus(msg, isErr){
+    var el = document.getElementById('stmtStatus');
+    el.textContent = msg || '';
+    el.hidden = !msg;
+    el.classList.toggle('err', !!isErr);
+  }
+
+  function stmtReset(){
+    stmt = null; stmtFile = null;
+    document.getElementById('stmtResult').hidden = true;
+    document.getElementById('stmtPassBox').hidden = true;
+    document.getElementById('stmtPassword').value = '';
+    document.getElementById('stmtDrop').hidden = false;
+    stmtSetStatus('');
+  }
+
+  function stmtHandleFile(file){
+    if(!file) return;
+    if(!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf'){ stmtSetStatus('Il file scelto non è un PDF.', true); return; }
+    stmtReset();
+    stmtSetStatus('Lettura di «' + file.name + '»…');
+    var reader = new FileReader();
+    reader.onload = function(ev){
+      stmtFile = { name: file.name, data: ev.target.result };
+      stmtOpen('');
+    };
+    reader.onerror = function(){ stmtSetStatus('Impossibile leggere il file.', true); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function stmtOpen(password){
+    if(!stmtFile) return;
+    var lib;
+    try{ lib = await loadPdfJs(); }
+    catch(e){ stmtSetStatus('Non riesco a caricare il lettore PDF. Controlla la connessione e riprova.', true); return; }
+    var pdf;
+    try{
+      /* copia del buffer: pdf.js lo trasferisce al worker */
+      pdf = await lib.getDocument({ data: new Uint8Array(stmtFile.data.slice(0)), password: password || undefined, isEvalSupported: false }).promise;
+    }catch(e){
+      if(e && e.name === 'PasswordException'){
+        document.getElementById('stmtPassBox').hidden = false;
+        stmtSetStatus(password ? 'Password errata, riprova.' : '', !!password);
+        setTimeout(function(){ document.getElementById('stmtPassword').focus(); }, 50);
+        return;
+      }
+      console.error(e);
+      stmtSetStatus('Questo PDF non si apre: potrebbe essere danneggiato.', true);
+      return;
+    }
+    document.getElementById('stmtPassBox').hidden = true;
+    var lines;
+    try{ lines = await stmtExtractLines(pdf); }
+    catch(e){ console.error(e); stmtSetStatus('Errore nella lettura del testo del PDF.', true); return; }
+    var lineText = function(l){ return l.items.map(function(i){ return i.str; }).join(' '); };
+    var firstPage = lines.filter(function(l){ return l.page === 1; }).map(lineText).join('\n');
+    var fullText = lines.map(lineText).join('\n');
+    if(fullText.replace(/\s/g, '').length < 20){
+      stmtSetStatus('Il PDF non contiene testo leggibile (sembra una scansione). Scarica dall\'home banking l\'estratto in PDF originale e riprova.', true);
+      return;
+    }
+    var bank = stmtDetectBank(firstPage, fullText);
+    stmt = { fileName: stmtFile.name, lines: lines, bankDetected: bank, account: bank };
+    stmtAnalyse();
+    if(!stmt.rows.length){
+      stmtSetStatus('Non ho trovato movimenti in questo PDF. Se è un estratto conto, mandami un esempio (anche con i dati oscurati) e adatto la lettura al formato della tua banca.', true);
+      stmt = null;
+      return;
+    }
+    stmtSetStatus('');
+    document.getElementById('stmtDrop').hidden = true;
+    document.getElementById('stmtResult').hidden = false;
+    stmtRender();
+  }
+
+  function stmtDupKey(account, date, type, amount){ return account + '|' + date + '|' + type + '|' + Number(amount).toFixed(2); }
+
+  /* analizza (o rianalizza, se cambia il conto) e segna i duplicati */
+  function stmtAnalyse(){
+    var r = stmtParse(stmt.lines, stmt.account);
+    stmt.opening = r.opening; stmt.closing = r.closing; stmt.closingDate = r.closingDate;
+    stmt.from = r.from; stmt.to = r.to;
+    stmt.rows = r.txs.map(function(t, i){
+      return { i: i, date: t.date, desc: t.desc, amount: t.amount, type: t.type, category: t.category,
+        categorySure: t.categorySure, transfer: t.transfer, dup: false, include: !t.transfer };
+    });
+    stmtMarkDuplicates();
+    stmt.align = stmt.closing != null;
+    stmt.closingInput = stmt.closing != null ? stmt.closing.toFixed(2) : '';
+  }
+
+  function stmtMarkDuplicates(){
+    var counts = {};
+    if(!stmt.account) { stmt.rows.forEach(function(r){ r.dup = false; }); return; }
+    state.transactions.forEach(function(t){
+      if(t.account !== stmt.account) return;
+      var k = stmtDupKey(t.account, t.date, t.type, t.amount);
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    stmt.rows.forEach(function(r){
+      var k = stmtDupKey(stmt.account, r.date, r.type, r.amount);
+      var wasDup = r.dup;
+      r.dup = !!counts[k];
+      if(r.dup){ counts[k]--; r.include = false; }
+      else if(wasDup){ r.include = !r.transfer; }
+    });
+  }
+
+  function stmtNet(rows){
+    return rows.reduce(function(s, r){ return s + (r.type === 'income' ? r.amount : -r.amount); }, 0);
+  }
+
+  function stmtRender(){
+    document.getElementById('stmtFileName').textContent = stmt.fileName;
+    var sel = document.getElementById('stmtAccount');
+    sel.innerHTML = '';
+    if(!stmt.account){
+      var ph = document.createElement('option'); ph.value = ''; ph.textContent = 'Scegli il conto…'; sel.appendChild(ph);
+    }
+    ACCOUNTS.forEach(function(a){
+      var o = document.createElement('option'); o.value = a; o.textContent = a; sel.appendChild(o);
+    });
+    sel.value = stmt.account || '';
+    document.getElementById('stmtBankHint').textContent = stmt.bankDetected
+      ? (stmt.account === stmt.bankDetected ? 'Banca riconosciuta dal testo dell\'estratto.' : 'Dal testo sembrava ' + stmt.bankDetected + ': hai scelto un altro conto.')
+      : 'Non ho riconosciuto la banca: scegli tu il conto.';
+    stmtRenderRows();
+    stmtRenderSummary();
+  }
+
+  function stmtRenderRows(){
+    var box = document.getElementById('stmtRows');
+    box.innerHTML = '';
+    stmt.rows.forEach(function(r){
+      var row = document.createElement('div');
+      row.className = 'stm-row' + (r.include ? '' : ' off');
+      var cats = r.type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+      var opts = cats.map(function(c){ return '<option' + (c === r.category ? ' selected' : '') + '>' + escapeHtml(c) + '</option>'; }).join('');
+      var badges = '';
+      if(r.dup) badges += '<span class="badge warn">già nel registro</span>';
+      if(r.transfer) badges += '<span class="badge warn">giroconto?</span>';
+      row.innerHTML =
+        '<input type="checkbox" data-act="inc" data-i="' + r.i + '"' + (r.include ? ' checked' : '') + ' aria-label="Includi movimento">' +
+        '<div class="stm-main">' +
+          '<div class="stm-top"><span class="stm-desc" title="' + escapeHtml(r.desc) + '">' + escapeHtml(r.desc) + '</span>' +
+          '<span class="stm-amt ' + r.type + '">' + (r.type === 'expense' ? '-' : '+') + fmtEUR(r.amount) + '</span></div>' +
+          '<div class="stm-sub"><span>' + fmtDateIt(r.date) + '</span>' +
+            '<select data-act="cat" data-i="' + r.i + '" class="' + (r.categorySure ? '' : 'unsure') + '" aria-label="Categoria">' + opts + '</select>' +
+            '<button type="button" class="stm-flip" data-act="flip" data-i="' + r.i + '">' + (r.type === 'expense' ? 'è un\'entrata' : 'è un\'uscita') + '</button>' +
+            badges +
+          '</div>' +
+        '</div>';
+      box.appendChild(row);
+    });
+  }
+
+  function stmtRenderSummary(){
+    var inc = stmt.rows.filter(function(r){ return r.include; });
+    var tIn = 0, tOut = 0;
+    inc.forEach(function(r){ if(r.type === 'income') tIn += r.amount; else tOut += r.amount; });
+    var period = stmt.from ? (fmtDateIt(stmt.from) + (stmt.to && stmt.to !== stmt.from ? ' – ' + fmtDateIt(stmt.to) : '')) : '—';
+    document.getElementById('stmtFacts').innerHTML =
+      '<div class="stm-fact"><span>Periodo</span><b style="font-size:12.5px">' + period + '</b></div>' +
+      '<div class="stm-fact"><span>Da importare</span><b>' + inc.length + ' di ' + stmt.rows.length + '</b></div>' +
+      '<div class="stm-fact"><span>Entrate</span><b class="income">+' + fmtEUR(tIn) + '</b></div>' +
+      '<div class="stm-fact"><span>Uscite</span><b class="expense">-' + fmtEUR(tOut) + '</b></div>';
+
+    /* quadratura con i saldi dell'estratto (su tutti i movimenti, anche quelli esclusi) */
+    var chk = document.getElementById('stmtCheck');
+    if(stmt.opening != null && stmt.closing != null){
+      var diff = stmt.opening + stmtNet(stmt.rows) - stmt.closing;
+      chk.hidden = false;
+      if(Math.abs(diff) < 0.02){ chk.className = 'stm-check ok'; chk.textContent = '✓ I movimenti tornano con il saldo iniziale (' + fmtEUR(stmt.opening) + ') e finale (' + fmtEUR(stmt.closing) + ') dell\'estratto.'; }
+      else { chk.className = 'stm-check warn'; chk.textContent = 'Attenzione: i movimenti non tornano con i saldi dell\'estratto (differenza ' + fmtEUR(diff) + '). Controlla entrate e uscite qui sotto.'; }
+    } else chk.hidden = true;
+
+    var allOn = stmt.rows.every(function(r){ return r.include; });
+    document.getElementById('stmtToggleAll').textContent = allOn ? 'Deseleziona tutti' : 'Seleziona tutti';
+
+    document.getElementById('stmtAlign').checked = !!stmt.align;
+    var closingEl = document.getElementById('stmtClosing');
+    if(document.activeElement !== closingEl) closingEl.value = stmt.closingInput;
+    var acc = stmt.account || 'il conto';
+    var dateTxt = stmt.closingDate ? ' al ' + fmtDateIt(stmt.closingDate) : '';
+    document.getElementById('stmtClosingLabel').textContent = 'Saldo finale dell\'estratto' + dateTxt + ' (€)';
+
+    var prev = document.getElementById('stmtBalancePreview');
+    if(!stmt.account){ prev.textContent = 'Scegli il conto per vedere come cambia il saldo.'; }
+    else {
+      var now = computeAccountBalance(stmt.account);
+      var after = stmtBalanceAfter();
+      prev.innerHTML = 'Saldo di ' + escapeHtml(acc) + ' nel registro: <b>' + fmtEUR(now) + '</b> → dopo l\'importazione: <b>' + fmtEUR(after) + '</b>' +
+        (stmt.align && stmtClosingValue() != null ? ' (allineato all\'estratto)' : '');
+    }
+    var btn = document.getElementById('stmtImport');
+    btn.textContent = inc.length ? 'Importa ' + inc.length + (inc.length === 1 ? ' movimento' : ' movimenti') : (stmt.align ? 'Aggiorna solo il saldo' : 'Importa');
+  }
+
+  function stmtClosingValue(){
+    var v = parseFloat(String(stmt.closingInput).replace(',', '.'));
+    return isNaN(v) ? null : v;
+  }
+
+  /* saldo del conto dopo l'importazione */
+  function stmtBalanceAfter(){
+    var acc = stmt.account;
+    var newRows = stmt.rows.filter(function(r){ return r.include; });
+    var closing = stmtClosingValue();
+    if(stmt.align && closing != null){
+      var cutoff = stmt.closingDate || stmt.to || '9999-12-31';
+      var later = 0;
+      state.transactions.forEach(function(t){
+        if(t.account !== acc || t.date <= cutoff) return;
+        later += t.type === 'income' ? t.amount : -t.amount;
+      });
+      newRows.forEach(function(r){ if(r.date > cutoff) later += r.type === 'income' ? r.amount : -r.amount; });
+      return closing + later;
+    }
+    return computeAccountBalance(acc) + stmtNet(newRows);
+  }
+
+  async function stmtImport(){
+    var err = document.getElementById('stmtError');
+    err.style.display = 'none';
+    if(!stmt.account){ err.textContent = 'Scegli il conto a cui appartiene l\'estratto.'; err.style.display = 'block'; return; }
+    var rows = stmt.rows.filter(function(r){ return r.include; });
+    var closing = stmtClosingValue();
+    var doAlign = stmt.align && closing != null;
+    if(stmt.align && closing == null){ err.textContent = 'Inserisci il saldo finale dell\'estratto, oppure disattiva l\'allineamento.'; err.style.display = 'block'; return; }
+    if(!rows.length && !doAlign){ err.textContent = 'Non hai selezionato nessun movimento.'; err.style.display = 'block'; return; }
+
+    var acc = stmt.account;
+    var now = new Date().toISOString();
+    rows.forEach(function(r){
+      state.transactions.push({
+        id: uid(), type: r.type, amount: r.amount, personalAmount: r.amount,
+        category: r.category, date: r.date, account: acc,
+        isShared: false, peopleCount: null, recurringId: null,
+        note: r.desc.slice(0, 140), source: 'estratto', createdAt: now
+      });
+    });
+    var finalBal = null;
+    if(doAlign){
+      var cutoff = stmt.closingDate || stmt.to || '9999-12-31';
+      var sumUpTo = 0;
+      state.transactions.forEach(function(t){
+        if(t.account !== acc || t.date > cutoff) return;
+        sumUpTo += t.type === 'income' ? t.amount : -t.amount;
+      });
+      state.accounts[acc] = closing - sumUpTo;
+      await saveAccounts();
+    }
+    await saveTransactions();
+    finalBal = computeAccountBalance(acc);
+    renderAll();
+    stmtReset();
+    showToast((rows.length ? 'Importati ' + rows.length + ' movimenti su ' + acc + '. ' : '') + 'Saldo ' + acc + ': ' + fmtEUR(finalBal) + '.');
+  }
+
+  document.getElementById('stmtFileInput').addEventListener('change', function(e){
+    var f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    stmtHandleFile(f);
+  });
+  var stmtDrop = document.getElementById('stmtDrop');
+  ['dragenter','dragover'].forEach(function(ev){ stmtDrop.addEventListener(ev, function(e){ e.preventDefault(); stmtDrop.classList.add('drag'); }); });
+  ['dragleave','drop'].forEach(function(ev){ stmtDrop.addEventListener(ev, function(e){ e.preventDefault(); stmtDrop.classList.remove('drag'); }); });
+  stmtDrop.addEventListener('drop', function(e){ stmtHandleFile(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]); });
+
+  document.getElementById('stmtPassBtn').addEventListener('click', function(){ stmtOpen(document.getElementById('stmtPassword').value); });
+  document.getElementById('stmtPassword').addEventListener('keydown', function(e){ if(e.key === 'Enter') stmtOpen(this.value); });
+
+  document.getElementById('stmtAccount').addEventListener('change', function(){
+    if(!stmt) return;
+    var wasCard = !!CARD_ACCOUNTS[stmt.account];
+    stmt.account = this.value || null;
+    if(wasCard !== !!CARD_ACCOUNTS[stmt.account]){
+      /* carta di credito ↔ conto: i segni si leggono al contrario, rianalizzo */
+      stmtAnalyse();
+    } else {
+      stmtMarkDuplicates();
+    }
+    stmtRender();
+  });
+
+  document.getElementById('stmtRows').addEventListener('change', function(e){
+    var t = e.target, i = Number(t.getAttribute('data-i'));
+    if(!stmt || isNaN(i)) return;
+    var r = stmt.rows[i];
+    if(t.getAttribute('data-act') === 'inc'){
+      r.include = t.checked;
+      t.closest('.stm-row').classList.toggle('off', !r.include);
+      stmtRenderSummary();
+    } else if(t.getAttribute('data-act') === 'cat'){
+      r.category = t.value; r.categorySure = true; t.classList.remove('unsure');
+    }
+  });
+  document.getElementById('stmtRows').addEventListener('click', function(e){
+    var t = e.target.closest('[data-act="flip"]');
+    if(!t || !stmt) return;
+    var r = stmt.rows[Number(t.getAttribute('data-i'))];
+    r.type = r.type === 'expense' ? 'income' : 'expense';
+    var g = stmtGuessCategory(r.type, r.desc);
+    r.category = g.category; r.categorySure = g.sure;
+    stmtMarkDuplicates();
+    stmtRenderRows();
+    stmtRenderSummary();
+  });
+  document.getElementById('stmtToggleAll').addEventListener('click', function(){
+    if(!stmt) return;
+    var allOn = stmt.rows.every(function(r){ return r.include; });
+    stmt.rows.forEach(function(r){ r.include = !allOn; });
+    stmtRenderRows(); stmtRenderSummary();
+  });
+  document.getElementById('stmtAlign').addEventListener('change', function(){
+    if(!stmt) return; stmt.align = this.checked; stmtRenderSummary();
+  });
+  document.getElementById('stmtClosing').addEventListener('input', function(){
+    if(!stmt) return; stmt.closingInput = this.value; stmtRenderSummary();
+  });
+  document.getElementById('stmtCancel').addEventListener('click', stmtReset);
+  document.getElementById('stmtImport').addEventListener('click', stmtImport);
 
 
   /* ---------- Google Drive ----------
@@ -1428,6 +2254,7 @@
       cloud.ready = false; cloud.dirty = false;
       state.transactions = []; state.recurring = []; state.accounts = {};
       ACCOUNTS.forEach(function(a){ state.accounts[a] = 0; });
+      stmtReset();
       setGateNote('');
       renderSyncBar(); renderAll();
     };

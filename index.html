@@ -1520,21 +1520,21 @@
   var CLOSE_RE = /saldo (finale|contabile finale|di chiusura|fine|a fine|disponibile finale|liquido finale)|closing balance|ending balance|nuovo saldo|saldo attuale/i;
   var GENERIC_BAL_RE = /^\s*saldo\b|\bsaldo (al|contabile al|disponibile al)\b|balance (on|as of|at)\b/i;
   var INCOME_WORDS = /accredit|a vostro favore|a vs\.? favore|a tuo favore|bonifico (in entrata|ricevuto|da)|stipend|emolument|retribuz|salary|payroll|versamento|rimborso|refund|storno|interessi a credito|dividend|cedola|cashback|incoming|received from|money added|ricevuto da|giroconto da/i;
-  var TRANSFER_WORDS = /giroconto|girofondi|trasferimento (tra|fra) (i )?(miei )?conti|ricarica (da|revolut|wise|carta|prepagata|conto)|top[\- ]?up|exchanged to|cambio valuta|pagamento (estratto conto )?american express|addebito american express|saldo carta di credito|pagamento ricevuto|payment received|grazie per il pagamento|to (your|my) (eur|usd|gbp)|trasferimento a me stesso|transfer to (own|self)/i;
+  var TRANSFER_WORDS = /giroconto|girofondi|spiccioli|revpoints|round[\- ]?up|arrotondament|salvadanaio|deposito senza vincoli|savings vault|addebito mensile della carta|trasferimento (tra|fra) (i )?(miei )?conti|ricarica (da|revolut|wise|carta|prepagata|conto)|top[\- ]?up|exchanged to|cambio valuta|pagamento (estratto conto )?american express|addebito american express|saldo carta di credito|pagamento ricevuto|payment received|grazie per il pagamento|to (your|my) (eur|usd|gbp)|trasferimento a me stesso|transfer to (own|self)/i;
 
   /* regole sul nome dell'esercente: se ne scatta una sola la categoria è sicura,
      se non ne scatta nessuna o ne scattano di diverse l'app chiede */
   var CATEGORY_RULES = [
-    ['Groceries', /esselunga|conad|lidl|carrefour|eurospin|eurospar|despar|interspar|\bspar\b|\bcoop\b|ipercoop|\bmd\b|md discount|aldi|penny|\bpam\b|\bcrai\b|sigma|todis|famila|\bdec[oò]\b|\bsisa\b|paghi poco|superconveniente|maxi ?sidis|\bard\b|\bin'?s\b|\bcoal\b|\btigre\b|naturas[iì]|supermerc|ipermerc|minimarket|market|alimentar|macelleri|pescheri|ortofrutt|frutta|panifici|forno|salumeri|caseifici|gastronomi/i],
-    ['Cibo fuori', /ristorant|pizzer|trattori|osteria|braceri|sushi|burger|mcdonald|\bkfc\b|\bbar\b|caff[eè]|pasticc|gelater|bistrot|\bpub\b|deliveroo|glovo|just ?eat|uber ?eats|starbucks|autogrill|rosticc|arancin|panineri|friggitori|kebab|\bpoke\b|tavola calda|enoteca|wine bar|cocktail|lounge|lido/i],
+    ['Groceries', /\bnetto\b|b[oó]nus\b|kj[oö]rb[uú]ð|kramb[uú]ð|kr[oó]nan|al[ií] ?& ?al[ií]per|dispensa|\bpim\b|supermercat|lidl|hi market|\bspar\b|esselunga|conad|lidl|carrefour|eurospin|eurospar|despar|interspar|\bspar\b|\bcoop\b|ipercoop|\bmd\b|md discount|aldi|penny|\bpam\b|\bcrai\b|sigma|todis|famila|\bdec[oò]\b|\bsisa\b|paghi poco|superconveniente|maxi ?sidis|\bard\b|\bin'?s\b|\bcoal\b|\btigre\b|naturas[iì]|supermerc|ipermerc|minimarket|market|alimentar|macelleri|pescheri|ortofrutt|frutta|panifici|forno|salumeri|caseifici|gastronomi/i],
+    ['Cibo fuori', /pizza|chef express|bakery|bombocrep|crep|gelat|cremeri|kaffi|coffee|espresso|beans|\bfood\b|pizzett|piadin|birreri|spritz|rossopomodoro|tarall|dolceri|delizie|pesce fritto|gourmet|mangion|capocollo|patatas|greek|chiosco|sfizio|\braki\b|el loco|bukies|burger king|fast food|cornetteri|cannol|focacc|street|grill|ristorant|pizzer|trattori|osteria|braceri|sushi|burger|mc ?donald|old wild west|giap|\bkfc\b|\bbar\b|caff[eè]|pasticc|gelater|bistrot|\bpub\b|deliveroo|glovo|just ?eat|uber ?eats|starbucks|autogrill|rosticc|arancin|panineri|friggitori|kebab|\bpoke\b|tavola calda|enoteca|wine bar|cocktail|lounge|lido/i],
     ['Abbigliamento', /zara|h ?& ?m|\bhm\b|\bovs\b|bershka|pull ?& ?bear|stradivarius|primark|uniqlo|zalando|calzedonia|intimissimi|tezenis|foot ?locker|\bnike\b|adidas|benetton|abbigliam|boutique|scarpe|calzatur|shein|vinted|piazza italia|terranova|alcott|celio|jack ?& ?jones|levi'?s|guess|max ?mara|sarto|lavanderi/i],
-    ['Svago e Sport', /decathlon|palestra|\bgym\b|fitness|cinema|ticketone|vivaticket|teatro|museo|playstation|\bsteam\b|nintendo|xbox|piscina|padel|tennis|calcetto|concert|discoteca|bowling|escape room|parco divertiment|acquapark|\bsport\b/i],
-    ['Articoli per la casa', /\bikea\b|leroy|bricoman|brico|\bobi\b|mediaworld|unieuro|euronics|\bexpert\b|trony|maison du monde|\btedi\b|\baction\b|arredament|ferrament|casalingh|tiger|kasanova|maxi zoo|arcaplanet|detersiv|amazon|amzn|temu|aliexpress|ebay/i],
+    ['Svago e Sport', /mcfit|baths|terme|\bspa\b|trampolin|hyperspace|\bbagno\b|stabiliment|museum|zoo\b|acquario|karting|\bsport|decathlon|palestra|\bgym\b|fitness|cinema|ticketone|vivaticket|teatro|museo|playstation|\bsteam\b|nintendo|xbox|piscina|padel|tennis|calcetto|concert|discoteca|bowling|escape room|parco divertiment|acquapark|\bsport\b/i],
+    ['Articoli per la casa', /\bikea\b|leroy|bricoman|brico|\bobi\b|media ?world|unieuro|euronics|\bexpert\b|trony|maison du monde|\btedi\b|\baction\b|arredament|ferrament|casalingh|tiger|kasanova|maxi zoo|arcaplanet|detersiv|amazon|amzn|temu|aliexpress|ebay/i],
     ['Affitto', /affitto|locazione|canone (di )?locaz|pigione|\brent\b|condomini/i],
     ['Utenze', /\benel\b|enel energia|servizio elettrico|\ba2a\b|\bhera\b|\biren\b|edison|plenitude|sorgenia|acea|bolletta|\bluce\b|\bgas\b|acquedott|siciliacque|\btim\b|telecom|vodafone|iliad|fastweb|windtre|wind tre|\bwind\b|ho\.? mobile|\bkena\b|very mobile|\bsky\b|\btari\b|rifiuti|ricarica telefonic/i],
     ['Regali e cose offerte', /regalo|regali|\bgift\b|fiorai|fiorist|profumeri|douglas|sephora|gioielleri|pandora|libreri|feltrinelli|mondadori|giocattol|toys/i],
-    ['Contribuzioni', /competenze di chiusura|interessi passivi|\bf24\b|\binps\b|\binail\b|agenzia (delle )?entrate|tribut|imposta|\btasse?\b|bollo (su|c\/c|conto|e\/c)|imposta di bollo|commission|canone (conto|mensile|carta)|spese (tenuta|conto|invio)|contribut|donazion|offerta|beneficenz|parrocchi|onlus|caritas/i],
-    ['Viaggi', /ryanair|easyjet|wizz|ita airways|alitalia|volotea|vueling|lufthansa|aeroitalia|trenitalia|italo|flixbus|\bast\b|interbus|booking|airbnb|expedia|hotel|\bb ?& ?b\b|ostello|hostel|resort|aeroporto|airport|traghett|caronte|tirrenia|\bgnv\b|grimaldi|liberty lines|noleggio auto|hertz|avis|europcar|sixt/i],
+    ['Contribuzioni', /competenze di chiusura|interessi passivi|\bf24\b|\binps\b|\binail\b|agenzia (delle )?entrate|tribut|imposta|\btasse?\b|bollo (su|c\/c|conto|e\/c)|imposta di bollo|commission|canone (conto|mensile|carta)|spese (tenuta|conto|invio)|contribut|donazion|donate|jw\.org|offerta|beneficenz|parrocchi|onlus|caritas/i],
+    ['Viaggi', /trainline|\batac\b|\bamts?\b|\blime\b|ribike|bike ?sharing|\btaxi\b|\buber\b|free ?now|funivia|duty free|metro|tram\b|bus\b|trasporti|ryanair|easyjet|wizz|ita airways|alitalia|volotea|vueling|lufthansa|aeroitalia|trenitalia|italo|flixbus|\bast\b|interbus|booking|airbnb|expedia|hotel|\bb ?& ?b\b|ostello|hostel|resort|aeroporto|airport|traghett|caronte|tirrenia|\bgnv\b|grimaldi|liberty lines|noleggio auto|hertz|avis|europcar|sixt/i],
     ['Parcheggi', /parchegg|parking|easypark|mycicero|\bsaba\b|apcoa|sosta|strisce blu|park ?&|autosilo/i],
     ['Benzina', /\beni\b|enilive|eni station|\bq8\b|\bip\b|ip matic|tamoil|\besso\b|agip|\bapi\b|carburant|benzin|rifornim|distributor|stazione di servizio|total ?erg|\berg\b|\bshell\b|repsol|petrol|fuel/i],
     ['Costi dell\'auto', /telepass|autostrad|pedagg|assicuraz|\brca\b|bollo auto|\baci\b|officina|meccanic|gommist|pneumatic|carrozzeri|revisione|autoricamb|ricambi auto|lavaggio auto|autolavaggio|unipol|generali|allianz|prima assicurazioni|\bverti\b|genertel|linear|conto ?tv/i],
@@ -1571,15 +1571,34 @@
   }
 
   /* passaggi di denaro tra i propri conti: prelievi, bonifici a/da sé stessi, ricariche */
-  function stmtOwnerRegex(ownerName){
+  function stmtOwnerSource(ownerName){
     var parts = String(ownerName || '').toLowerCase().replace(/[^a-zà-ü' ]/g, ' ').split(/\s+/).filter(function(x){ return x.length > 1; });
     if(parts.length < 2) return null;
     var esc = parts.map(function(x){ return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
-    return new RegExp('\\b(' + esc.join('[\\s,.]+') + '|' + esc.slice().reverse().join('[\\s,.]+') + ')\\b', 'i');
+    return '(?:' + esc.join('[\\s,.]+') + '|' + esc.slice().reverse().join('[\\s,.]+') + ')';
   }
-  function stmtTransferKind(desc, bankAccount, ownerName){
-    var re = stmtOwnerRegex(ownerName);
-    if(re && re.test(desc)) return 'intestatario';
+  function stmtOwnerRegex(ownerName){
+    var src = stmtOwnerSource(ownerName);
+    return src ? new RegExp('\\b' + src + '\\b', 'i') : null;
+  }
+  /* il movimento è a nome dell'intestatario? Per le entrate guardo chi le manda:
+     "Da Davide Adamo · Omar Bosco" è un'entrata vera, "Da Bosco Omar" no */
+  function stmtIsOwnTransfer(desc, ownerName, type){
+    var src = stmtOwnerSource(ownerName);
+    if(!src) return false;
+    var re = new RegExp('\\b' + src + '\\b', 'i');
+    if(!re.test(desc)) return false;
+    if(type === 'income'){
+      var m = desc.match(/\b(?:da parte di|da|ord\.?|ordinante|from|mittente)\s+(.+)$/i);
+      if(m){
+        var sender = m[1].replace(new RegExp('[\\s,.\\-]*\\b' + src + '\\s*$', 'i'), '').trim();
+        return !sender || re.test(sender);
+      }
+    }
+    return true;
+  }
+  function stmtTransferKind(desc, bankAccount, ownerName, type){
+    if(stmtIsOwnTransfer(desc, ownerName, type)) return 'intestatario';
     if(/prelievo|prelevamento|\bbancomat\b|\batm\b|cash withdrawal|withdrawal/i.test(desc) && !/bancomat pay/i.test(desc)) return 'prelievo';
     if(TRANSFER_WORDS.test(desc)) return 'giroconto';
     if(BANK_PATTERNS.some(function(b){ return b.account !== bankAccount && new RegExp(b.re.source, 'i').test(desc); })) return 'giroconto';
@@ -1587,12 +1606,36 @@
   }
 
   function stmtCleanDesc(s){
-    return s.replace(/\s+/g, ' ').replace(/^[\s\-–·|:]+|[\s\-–·|:]+$/g, '').trim();
+    return s.replace(/\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b/g, ' ').replace(/\b\d{12,19}\b/g, ' ').replace(/\s+/g, ' ').replace(/^[\s\-–·|:]+|[\s\-–·|:]+$/g, '').trim();
   }
 
   /* lines: [{page, y, items:[{str,x,w}]}] già ordinate per pagina, dall'alto, da sinistra */
+  /* pezzi di testo che non servono alla descrizione */
+  var NOISE_ITEM = /^(data valuta|pagamento con carta|-|–|it)$/i;
+  var REVOLUT_CATEGORY = /^(esercente|altri|ricarica|trasferimento|prelievo di contanti|cambio|rimborso|commissione)$/i;
+  var REVOLUT_PRODUCT = /^(.*?)\s+(riepiloghi|estratti conto delle operazioni|transaction statements)$/i;
+  var REVOLUT_ACCOUNT = /^(conto personale|deposito senza vincoli|conto .*|deposito .*)\s*\((\w{3})\)$/i;
+  function stmtPreprocess(lines, bankAccount){
+    var multi = bankAccount === 'Revolut' && lines.some(function(l){ return l.items.length === 1 && REVOLUT_PRODUCT.test(l.items[0].str.trim()); });
+    var product = null, account = null, out = [];
+    lines.forEach(function(l){
+      var only = l.items.length === 1 ? l.items[0].str.trim() : '';
+      if(multi && only){
+        var pm = only.match(REVOLUT_PRODUCT), am = only.match(REVOLUT_ACCOUNT);
+        if(pm){ product = pm[1].toLowerCase(); account = null; return; }
+        if(am){ account = am[1].toLowerCase() + ' (' + am[2].toUpperCase() + ')'; return; }
+      }
+      /* estratto Revolut con più conti: tengo solo il conto corrente in euro */
+      if(multi && ((product && product !== 'conti correnti') || (account && account !== 'conto personale (EUR)'))) return;
+      var items = l.items.filter(function(it){ var t = it.str.trim(); return !NOISE_ITEM.test(t) && !(bankAccount === 'Revolut' && REVOLUT_CATEGORY.test(t)); });
+      if(items.length) out.push({ page: l.page, y: l.y, items: items });
+    });
+    return out;
+  }
+
   function stmtParse(lines, bankAccount, opts){
     opts = opts || {};
+    lines = stmtPreprocess(lines, bankAccount);
     var isCard = !!CARD_ACCOUNTS[bankAccount];
     /* anno di riferimento per date senza anno */
     var yearCount = {};
@@ -1686,19 +1729,25 @@
       var hdr = r.header;
       var amt = null, type = null, bal = null, how = '';
 
-      if(hdr && hdr.bal && amts.length >= 2){
-        var bi = 0, bd = Infinity;
-        amts.forEach(function(a, i){ var dd = colDist(a, hdr.bal); if(dd < bd){ bd = dd; bi = i; } });
-        if(bi === amts.length - 1){ bal = amts[bi]; amts.splice(bi, 1); }
-      } else if(!hdr && amts.length >= 2){
-        bal = amts[amts.length - 1]; amts = amts.slice(0, -1);
-      }
-      if(!amts.length) return;
-      var a = amts[amts.length - 1];
-      if(amts.length >= 2 && hdr && hdr.out && hdr['in']){
-        /* entrambe le colonne piene: prendo quella non nulla */
-        var nz = amts.filter(function(x){ return x.value > 0; });
-        if(nz.length) a = nz[nz.length - 1];
+      var a;
+      if(hdr && (hdr.out || hdr['in'] || hdr.amt)){
+        /* colonne note: l'importo è quello sotto entrate/uscite/importo, il saldo quello sotto saldo;
+           le altre colonne (commissioni, imposte…) si ignorano */
+        var cols = [hdr.out, hdr['in'], hdr.amt].filter(Boolean);
+        var dAmt = function(x){ return Math.min.apply(null, cols.map(function(c){ return colDist(x, c); })); };
+        if(hdr.bal && amts.length >= 2){
+          var bi = -1, bd = Infinity;
+          amts.forEach(function(x, i){ var dd = colDist(x, hdr.bal); if(dd < bd && dd < dAmt(x)){ bd = dd; bi = i; } });
+          if(bi >= 0){ bal = amts[bi]; amts = amts.filter(function(x, i){ return i !== bi; }); }
+        }
+        var cand = amts.filter(function(x){ return x.value > 0; });
+        if(!cand.length) return;
+        cand.sort(function(x, y){ return dAmt(x) - dAmt(y); });
+        a = cand[0];
+      } else {
+        if(amts.length >= 2){ bal = amts[amts.length - 1]; amts = amts.slice(0, -1); }
+        if(!amts.length) return;
+        a = amts[amts.length - 1];
       }
       amt = a.value;
       if(!(amt > 0)) return;
@@ -1721,7 +1770,7 @@
 
       var desc = stmtCleanDesc(r.desc) || (type === 'income' ? 'Entrata' : 'Uscita');
       var guess = stmtGuessCategory(type, desc, opts.history);
-      var tk = stmtTransferKind(desc, bankAccount, opts.ownerName);
+      var tk = stmtTransferKind(desc, bankAccount, opts.ownerName, type);
       txs.push({ date: r.date, desc: desc, amount: Math.round(amt * 100) / 100, type: type, how: how,
         category: guess.category, categorySure: guess.sure, candidates: guess.candidates,
         transfer: !!tk, transferKind: tk, balanceAfter: balVal });

@@ -441,6 +441,13 @@
   .ask-group:first-child{margin-top:0;}
   .ask-all{display:flex;gap:8px;align-items:flex-start;margin:0 0 12px;padding:10px;border:1px solid var(--gold);background:var(--gold-soft);border-radius:var(--radius-sm);font-size:12.5px;line-height:1.4;cursor:pointer;}
   .ask-all input{margin-top:2px;accent-color:var(--ink);}
+  .stm-sub select[data-act="dest"]{max-width:190px;}
+  .acc-sub{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;font-size:11.5px;color:var(--ink-soft);font-family:var(--font-mono);margin-top:3px;}
+  .acc-diff{font-weight:600;}
+  .acc-diff.ok{color:var(--income);}
+  .acc-diff.bad{color:var(--expense);}
+  .acc-right{display:flex;flex-direction:column;align-items:flex-end;}
+  .patr-compare{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-soft);}
 </style>
 </head>
 <body>
@@ -535,12 +542,13 @@
 
     <div class="page hidden" id="page-patrimonio">
       <h2 class="page-title">Situazione patrimoniale</h2>
-      <p class="page-note">Il saldo di ogni conto si aggiorna da solo in base alle spese e alle entrate che registri. Tocca ✎ per allineare un saldo al valore reale (es. la prima volta che usi l'app).</p>
+      <p class="page-note">Il saldo grande è quello reale che scrivi tu con ✎: l'app non lo cambia mai. Sotto, il saldo <b>calcolato</b> parte dal tuo e aggiunge le entrate, le uscite e i giroconti registrati dopo quella data; la differenza ti dice se manca qualcosa.</p>
 
       <section class="balance-card" style="margin-bottom:18px;">
         <div class="balance-item balance-total" style="align-items:flex-start;">
-          <span class="balance-label">Patrimonio totale</span>
+          <span class="balance-label">Patrimonio totale (scritto da te)</span>
           <span class="balance-value" id="patrimonioTotalVal">€0,00</span>
+          <div class="patr-compare" id="patrimonioCompare"></div>
         </div>
       </section>
 
@@ -599,16 +607,16 @@
 
         <details class="stm-transfers" id="stmtTransfersBox" hidden>
           <summary id="stmtTransfersTitle"></summary>
-          <p class="hint" style="margin:8px 0 4px;">Non sono vere entrate o uscite, quindi restano fuori dai totali e dai grafici. Gli spiccioli RevPoints passano al conto RevPoints; gli altri non vengono importati e il saldo resta giusto grazie all'allineamento qui sotto.</p>
+          <p class="hint" style="margin:8px 0 4px;">Non sono vere entrate o uscite, quindi restano fuori dai totali e dai grafici. Per ognuno scegli il conto collegato: il giroconto toglie da un conto e aggiunge all'altro. Le ricariche ricevute da te stesso restano escluse, perché le conta già l'estratto del conto da cui partono.</p>
           <div id="stmtTransferRows"></div>
         </details>
 
         <section class="stm-card stm-align">
-          <label class="switch-row">
+          <label class="switch-row" hidden>
             <span>Allinea il saldo al saldo finale dell'estratto</span>
             <span class="switch"><input type="checkbox" id="stmtAlign"><span class="switch-slider"></span></span>
           </label>
-          <div class="field" style="margin:10px 0 0;">
+          <div class="field" style="margin:10px 0 0;" hidden>
             <label for="stmtClosing" id="stmtClosingLabel">Saldo finale dell'estratto (€)</label>
             <input type="number" id="stmtClosing" step="0.01" inputmode="decimal">
           </div>
@@ -778,7 +786,7 @@
 
   var EXPENSE_CATEGORIES = ['Groceries','Cibo fuori','Abbigliamento','Svago e Sport','Articoli per la casa','Affitto','Utenze','Regali e cose offerte','Contribuzioni','Viaggi','Parcheggi','Benzina','Costi dell\'auto','Imprevisti','Abbonamenti','Salute'];
   var INCOME_CATEGORIES = ['Stipendio','Roy','Trading'];
-  var ACCOUNTS = ['BCC','BBVA','Contanti','Arangio','Traderepublic','Wise','PuPrime','Revolut','RevPoints','Amex'];
+  var ACCOUNTS = ['BCC','BBVA','Contanti','Arangio','Traderepublic','Wise','PuPrime','Revolut','RevPoints','Buddybank','Amex'];
   var CATEGORY_COLORS = {
     'Groceries':'#1F6F54','Cibo fuori':'#A83E2C','Abbigliamento':'#B8973E','Svago e Sport':'#3E6B8A',
     'Articoli per la casa':'#7C5C3E','Affitto':'#5C4A78','Utenze':'#2F8F8F','Regali e cose offerte':'#C97A3D',
@@ -909,16 +917,49 @@
      di tutte le entrate e uscite assegnate a quel conto. Per le spese condivise
      viene sottratto l'intero importo pagato (non solo la tua quota), perché è
      l'importo che esce realmente dal conto. */
+  /* Il saldo "scritto da te" (✎) non viene mai toccato dall'app.
+     Il saldo "calcolato" parte da quello e aggiunge i movimenti successivi:
+     la differenza dice se i movimenti registrati spiegano il saldo reale. */
+  function manualRecord(name){
+    var m = state.settings && state.settings.manual && state.settings.manual[name];
+    return (m && typeof m.value === 'number') ? m : { value: 0, date: '0000-00-00', at: '' };
+  }
+  function manualBalance(name){ return manualRecord(name).value; }
+  function txAfterManual(t, m){
+    return t.date > m.date || (t.date === m.date && (t.createdAt || '') > (m.at || ''));
+  }
   function computeAccountBalance(name){
-    var offset = (state.accounts && typeof state.accounts[name] === 'number') ? state.accounts[name] : 0;
+    var m = manualRecord(name);
     var sum = 0;
-    state.transactions.forEach(function(t){ sum += txAccountEffect(t, name); });
-    return offset + sum;
+    state.transactions.forEach(function(t){ if(txAfterManual(t, m)) sum += txAccountEffect(t, name); });
+    return m.value + sum;
   }
   function computeTotalPatrimonio(){
     var total = 0;
     ACCOUNTS.forEach(function(a){ total += computeAccountBalance(a); });
     return total;
+  }
+  function manualTotalPatrimonio(){
+    var total = 0;
+    ACCOUNTS.forEach(function(a){ total += manualBalance(a); });
+    return total;
+  }
+  /* la prima volta: i saldi che vedevi (scritti da te con ✎) diventano i saldi manuali */
+  function migrateManualBalances(){
+    state.settings = state.settings || {};
+    if(state.settings.manual) return false;
+    var now = new Date(), manual = {};
+    var today = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+    ACCOUNTS.forEach(function(a){
+      var offset = (state.accounts && typeof state.accounts[a] === 'number') ? state.accounts[a] : 0;
+      var sum = 0;
+      state.transactions.forEach(function(t){ sum += txAccountEffect(t, a); });
+      manual[a] = { value: Math.round((offset + sum) * 100) / 100, date: today, at: now.toISOString() };
+    });
+    /* conto Buddybank aggiunto il 7/11/2026 con il saldo comunicato (493 €) */
+    if(state.transactions.length && !manual.Buddybank.value) manual.Buddybank.value = 493;
+    state.settings.manual = manual;
+    return true;
   }
 
   /* ---------- rendering: dashboard ---------- */
@@ -1119,18 +1160,28 @@
     renderLegend(document.getElementById('incomeLegend'), incDonut.entries, incDonut.total);
   }
 
+  function diffHtml(diff){
+    var ok = Math.abs(diff) < 0.005;
+    return '<span class="acc-diff ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓ coincide' : 'diff. ' + (diff > 0 ? '+' : '') + fmtEUR(diff)) + '</span>';
+  }
   function renderAccounts(){
-    document.getElementById('patrimonioTotalVal').textContent = fmtEUR(computeTotalPatrimonio());
+    var manTot = manualTotalPatrimonio(), calcTot = computeTotalPatrimonio();
+    document.getElementById('patrimonioTotalVal').textContent = fmtEUR(manTot);
+    document.getElementById('patrimonioCompare').innerHTML = '<span>calcolato ' + fmtEUR(calcTot) + '</span>' + diffHtml(calcTot - manTot);
     var list = document.getElementById('accountsList');
     list.innerHTML = '';
     ACCOUNTS.forEach(function(a){
-      var bal = computeAccountBalance(a);
+      var m = manualRecord(a);
+      var bal = m.value, calc = computeAccountBalance(a);
       var row = document.createElement('div');
       row.className = 'account-item';
       row.innerHTML =
         '<span class="account-name">'+a+'</span>' +
         '<div style="display:flex;align-items:center;gap:12px;">' +
-          '<span class="account-balance" style="color:'+(bal < 0 ? 'var(--expense)' : 'var(--ink)')+'">'+fmtEUR(bal)+'</span>' +
+          '<div class="acc-right">' +
+            '<span class="account-balance" style="color:'+(bal < 0 ? 'var(--expense)' : 'var(--ink)')+'">'+fmtEUR(bal)+'</span>' +
+            '<span class="acc-sub">' + (m.date > '0000-00-00' ? '<span>al ' + fmtDateIt(m.date) + '</span>' : '') + '<span>calcolato ' + fmtEUR(calc) + '</span>' + diffHtml(calc - bal) + '</span>' +
+          '</div>' +
           '<button class="edit-btn" data-account="'+a+'" aria-label="Aggiorna saldo di '+a+'">✎</button>' +
         '</div>';
       list.appendChild(row);
@@ -1142,8 +1193,8 @@
 
   function openAccountEdit(name){
     editingAccount = name;
-    document.getElementById('accountEditTitle').textContent = 'Aggiorna saldo — ' + name;
-    document.getElementById('inputAccountBalance').value = computeAccountBalance(name).toFixed(2);
+    document.getElementById('accountEditTitle').textContent = 'Saldo reale — ' + name;
+    document.getElementById('inputAccountBalance').value = manualBalance(name).toFixed(2);
     document.getElementById('accountEditOverlay').classList.remove('hidden');
     setTimeout(function(){ document.getElementById('inputAccountBalance').focus(); }, 50);
   }
@@ -1154,10 +1205,12 @@
   async function saveAccountEdit(){
     var val = parseFloat(document.getElementById('inputAccountBalance').value);
     if(isNaN(val)){ showToast('Inserisci un importo valido.'); return; }
-    var sumWithoutOffset = 0;
-    state.transactions.forEach(function(t){ sumWithoutOffset += txAccountEffect(t, editingAccount); });
     var accountName = editingAccount;
-    state.accounts[accountName] = val - sumWithoutOffset;
+    var now = new Date();
+    state.settings = state.settings || {};
+    state.settings.manual = state.settings.manual || {};
+    state.settings.manual[accountName] = { value: Math.round(val * 100) / 100,
+      date: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()), at: now.toISOString() };
     await saveAccounts();
     closeAccountEdit();
     renderAll();
@@ -1538,7 +1591,7 @@
   var CLOSE_RE = /saldo (finale|contabile finale|di chiusura|fine|a fine|disponibile finale|liquido finale)|closing balance|ending balance|nuovo saldo|saldo attuale/i;
   var GENERIC_BAL_RE = /^\s*saldo\b|\bsaldo (al|contabile al|disponibile al)\b|balance (on|as of|at)\b/i;
   var INCOME_WORDS = /accredit|a vostro favore|a vs\.? favore|a tuo favore|bonifico (in entrata|ricevuto|da)|stipend|emolument|retribuz|salary|payroll|versamento|rimborso|refund|storno|interessi a credito|dividend|cedola|cashback|incoming|received from|money added|ricevuto da|giroconto da/i;
-  var TRANSFER_WORDS = /giroconto|girofondi|spiccioli|revpoints|round[\- ]?up|arrotondament|salvadanaio|deposito senza vincoli|savings vault|addebito mensile della carta|trasferimento (tra|fra) (i )?(miei )?conti|ricarica (da|revolut|wise|carta|prepagata|conto)|top[\- ]?up|exchanged to|cambio valuta|pagamento (estratto conto )?american express|addebito american express|saldo carta di credito|pagamento ricevuto|payment received|grazie per il pagamento|to (your|my) (eur|usd|gbp)|trasferimento a me stesso|transfer to (own|self)/i;
+  var TRANSFER_WORDS = /giroconto|girofondi|spiccioli|revpoints|round[\- ]?up|arrotondament|salvadanaio|deposito senza vincoli|savings vault|addebito mensile della carta|trasferimento (tra|fra) (i )?(miei )?conti|ricarica (da|revolut|wise|carta|prepagata|conto)|top[\- ]?up|exchanged to|cambio valuta|saldo carta di credito|pagamento ricevuto|payment received|grazie per il pagamento|to (your|my) (eur|usd|gbp)|trasferimento a me stesso|transfer to (own|self)/i;
 
   /* regole sul nome dell'esercente: se ne scatta una sola la categoria è sicura,
      se non ne scatta nessuna o ne scattano di diverse l'app chiede */
@@ -1634,7 +1687,7 @@
     if(stmtIsOwnTransfer(desc, ownerName, type)) return 'intestatario';
     if(/prelievo|prelevamento|\bbancomat\b|\batm\b|cash withdrawal|withdrawal/i.test(desc) && !/bancomat pay/i.test(desc)) return 'prelievo';
     if(TRANSFER_WORDS.test(desc)) return 'giroconto';
-    if(BANK_PATTERNS.some(function(b){ return b.account !== bankAccount && new RegExp(b.re.source, 'i').test(desc); })) return 'giroconto';
+    if(BANK_PATTERNS.some(function(b){ return b.account !== bankAccount && b.account !== 'Amex' && new RegExp(b.re.source, 'i').test(desc); })) return 'giroconto';
     return null;
   }
 
@@ -1731,7 +1784,7 @@
       /* riga con la sola data: il movimento è sulla riga seguente (es. Wise) */
       if(d && startsWithDate && !amounts.length && text.length - d.len <= 3){ pendingDate = { iso: d.iso, page: line.page, y: line.y }; last = null; return; }
       if((!d || !startsWithDate) && amounts.length && pendingDate && pendingDate.page === line.page && Math.abs(pendingDate.y - line.y) < 30){
-        var prow = { date: pendingDate.iso, desc: stmtCleanDesc(amounts.reduce(function(t, a){ return t.replace(a.raw.trim(), ' '); }, text).replace(/\b(EUR|€)\b/g, ' ')), amounts: amounts, page: line.page, y: line.y, extra: 0, header: header };
+        var prow = { date: pendingDate.iso, rawText: text, desc: stmtCleanDesc(amounts.reduce(function(t, a){ return t.replace(a.raw.trim(), ' '); }, text).replace(/\b(EUR|€)\b/g, ' ')), amounts: amounts, page: line.page, y: line.y, extra: 0, header: header };
         if(amounts.some(function(a){ return a.neg; })) anySignedNeg = true;
         rows.push(prow); last = prow; pendingDate = null;
         return;
@@ -1740,7 +1793,7 @@
         /* riga di continuazione della descrizione */
         if(/^(19|20)\d{2}$/.test(text)) return; /* anno su riga a parte (es. Trade Republic) */
         if(last && !amounts.length && line.page === last.page && Math.abs(last.y - line.y) < 30 && last.extra < 2 && text.length < 120){
-          last.desc += ' ' + text; last.extra++;
+          last.desc += ' ' + text; last.rawText = (last.rawText || '') + ' ' + text; last.extra++;
         }
         return;
       }
@@ -1754,7 +1807,7 @@
       amounts.forEach(function(a){ desc = desc.replace(a.raw.trim(), ' '); });
       desc = desc.replace(/\b(EUR|€)\b/g, ' ');
 
-      var row = { date: d.iso, desc: stmtCleanDesc(desc), amounts: amounts, page: line.page, y: line.y, extra: 0, header: header };
+      var row = { date: d.iso, rawText: text, desc: stmtCleanDesc(desc), amounts: amounts, page: line.page, y: line.y, extra: 0, header: header };
       if(amounts.some(function(a){ return a.neg; })) anySignedNeg = true;
       rows.push(row);
       last = row;
@@ -1816,7 +1869,7 @@
       txs.push({ date: r.date, desc: desc, amount: Math.round(amt * 100) / 100, type: type, how: how,
         category: guess.category, categorySure: guess.sure, candidates: guess.candidates,
         refund: !!guess.refund, transfer: !!tk, transferKind: tk, toAccount: tk === 'revpoints' ? 'RevPoints' : null,
-        p2p: P2P_RE.test(desc), balanceAfter: balVal });
+        p2p: P2P_RE.test(desc), raw: r.rawText || r.desc, balanceAfter: balVal });
     });
 
     /* controllo con i saldi progressivi: se il segno dedotto contraddice il saldo, correggo */
@@ -2107,19 +2160,90 @@
     return h;
   }
 
+  /* da dove a dove vanno i giroconti: codice ABI dell'IBAN o nome nella descrizione.
+     Le scelte fatte a mano vengono ricordate (settings.destMap) */
+  var ABI_ACCOUNTS = { '03576': 'BBVA', '03669': 'Revolut', '08713': 'BCC', '02008': 'Buddybank' };
+  /* conti senza estratto: quello che ci mandi è speso, tranne il saldo che ci resta */
+  var SPEND_ACCOUNTS = { 'Buddybank': true };
+  function stmtAbi(raw){
+    var m = String(raw || '').replace(/\s+/g, '').match(/IT\d{2}[A-Z](\d{5})\d{5}[A-Z0-9]{12}/);
+    return m ? m[1] : null;
+  }
+  function stmtGuessDest(r){
+    if(r.transferKind === 'revpoints') return 'RevPoints';
+    if(r.transferKind === 'prelievo') return 'Contanti';
+    if(r.type === 'income') return '';            /* entrate da te stesso: le conta l'estratto del conto da cui partono */
+    var learned = (state.settings && state.settings.destMap) || {};
+    var abi = stmtAbi(r.raw);
+    if(abi && learned['abi:' + abi]) return learned['abi:' + abi];
+    if(abi && ABI_ACCOUNTS[abi] && ABI_ACCOUNTS[abi] !== stmt.account) return ABI_ACCOUNTS[abi];
+    if(/buddy ?bank|\bbuddy\b/i.test(r.raw)) return 'Buddybank';
+    for(var i = 0; i < BANK_PATTERNS.length; i++){
+      var b = BANK_PATTERNS[i];
+      if(b.account !== stmt.account && b.account !== 'Amex' && new RegExp(b.re.source, 'i').test(r.raw)) return b.account;
+    }
+    return '';
+  }
+  function stmtSetDest(r, dest){
+    if(dest === 'spent'){
+      r.transfer = false; r.toAccount = null; r.include = true;
+      if(!r.spentVia){ r.category = ''; r.categorySure = false; r.candidates = []; }
+      return;
+    }
+    r.toAccount = dest || null;
+    r.include = !!dest;
+  }
+  /* bonifici verso un conto senza estratto: i più recenti restano sul conto fino al suo saldo,
+     il resto conta come speso */
+  function stmtSplitSpendAccounts(){
+    Object.keys(SPEND_ACCOUNTS).forEach(function(accName){
+      var rows = stmt.rows.filter(function(r){ return r.transfer && r.toAccount === accName && r.type === 'expense'; });
+      if(!rows.length) return;
+      var already = 0;
+      state.transactions.forEach(function(t){ if(t.type === 'transfer' && t.toAccount === accName) already += t.amount; });
+      var keep = Math.max(0, manualBalance(accName) - already);
+      rows.sort(function(a, b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+      rows.forEach(function(r){
+        if(keep >= r.amount - 0.005){ keep -= r.amount; return; }
+        var spentAmt = Math.round((r.amount - keep) * 100) / 100;
+        if(keep > 0.005){
+          var kept = Object.assign({}, r, { amount: Math.round(keep * 100) / 100 });
+          stmt.rows.push(kept);
+          r.amount = spentAmt;
+          keep = 0;
+        }
+        r.spentVia = accName;
+        r.desc = r.desc + ' · speso con ' + accName;
+        r.key = 'speso con ' + accName.toLowerCase();
+        stmtSetDest(r, 'spent');
+      });
+    });
+    stmt.rows.sort(function(a, b){ return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+    stmt.rows.forEach(function(r, i){ r.i = i; });
+  }
+
   function stmtAnalyse(){
     var r = stmtParse(stmt.lines, stmt.account, { history: stmtHistory(), ownerName: stmtOwnerName() });
     stmt.opening = r.opening; stmt.closing = r.closing; stmt.closingDate = r.closingDate;
     stmt.from = r.from; stmt.to = r.to;
     stmt.skipped = {};
     stmt.rows = r.txs.map(function(t, i){
-      return { i: i, date: t.date, desc: t.desc, amount: t.amount, type: t.type, category: t.category,
+      var row = { i: i, date: t.date, desc: t.desc, amount: t.amount, type: t.type, category: t.category,
         categorySure: t.categorySure, candidates: t.candidates || [], key: stmtMerchant(t.desc, 3),
-        refund: !!t.refund, p2p: !!t.p2p, toAccount: t.toAccount || null,
-        transfer: t.transfer, transferKind: t.transferKind, dup: false, include: !t.transfer || !!t.toAccount };
+        refund: !!t.refund, p2p: !!t.p2p, raw: t.raw || t.desc, toAccount: null,
+        transfer: t.transfer, transferKind: t.transferKind, dup: false, include: !t.transfer };
+      /* addebiti della carta American Express: per ora contano come uscita */
+      if(!row.transfer && row.type === 'expense' && stmt.account !== 'Amex' && /american express/i.test(row.raw)){
+        row.desc = 'Addebito carta American Express'; row.key = 'addebito american express';
+      }
+      /* bonifici al tuo conto Buddybank (beneficiario "Buddybank Omar") */
+      if(!row.transfer && row.type === 'expense' && /(\bBEN|nominativo beneficiario:)\s*buddy ?bank|ricarica .*\bbuddy\b/i.test(row.raw)){ row.transfer = true; row.transferKind = 'intestatario'; }
+      if(row.transfer) stmtSetDest(row, stmtGuessDest(row));
+      return row;
     });
+    stmtSplitSpendAccounts();
     stmtMarkDuplicates();
-    stmt.align = stmt.closing != null;
+    stmt.align = false;
     stmt.closingInput = stmt.closing != null ? stmt.closing.toFixed(2) : '';
   }
 
@@ -2171,6 +2295,16 @@
     html += '<optgroup label="Rimborso di una spesa">' + EXPENSE_CATEGORIES.map(function(c){ return opt('R:' + c, 'Rimborso · ' + c, r.refund && c === r.category); }).join('') + '</optgroup>';
     return html;
   }
+  function stmtDestSelect(r){
+    var lbl = r.type === 'expense' ? 'verso ' : 'da ';
+    var opts = '<option value=""' + (r.toAccount ? '' : ' selected') + '>' + (r.type === 'expense' ? 'non importare' : 'non importare (lo conta l\'altro conto)') + '</option>';
+    ACCOUNTS.forEach(function(a){
+      if(a === stmt.account) return;
+      opts += '<option value="' + escapeHtml(a) + '"' + (r.toAccount === a ? ' selected' : '') + '>' + lbl + escapeHtml(a) + '</option>';
+    });
+    if(r.type === 'expense') opts += '<option value="spent">speso (conta come uscita)</option>';
+    return '<select data-act="dest" data-i="' + r.i + '" aria-label="Conto collegato">' + opts + '</select>';
+  }
   function stmtRowHtml(r){
     var need = r.include && !r.transfer && !r.category;
     var opts = stmtCatOptions(r);
@@ -2180,7 +2314,8 @@
     }
     var badges = '';
     if(r.dup) badges += '<span class="badge warn">già nel registro</span>';
-    if(r.transfer) badges += '<span class="badge">' + (r.toAccount ? (r.type === 'expense' ? '→ ' : '← ') + escapeHtml(r.toAccount) : (TRANSFER_LABEL[r.transferKind] || 'giroconto')) + '</span>';
+    if(r.transfer) badges += '<span class="badge">' + (TRANSFER_LABEL[r.transferKind] || 'giroconto') + '</span>' + stmtDestSelect(r);
+    if(r.spentVia) badges += '<span class="badge">da ' + escapeHtml(r.spentVia) + '</span>';
     if(r.refund) badges += '<span class="badge">rimborso</span>';
     return '<div class="stm-row' + (r.include ? '' : ' off') + (need ? ' need' : '') + '">' +
       '<input type="checkbox" data-act="inc" data-i="' + r.i + '"' + (r.include ? ' checked' : '') + ' aria-label="Includi movimento">' +
@@ -2206,8 +2341,8 @@
     if(tr.length){
       var tot = tr.reduce(function(a, r){ return a + r.amount; }, 0);
       var sub = tr.filter(function(r){ return r.toAccount && r.include; });
-      document.getElementById('stmtTransfersTitle').textContent = 'Passaggi tra i tuoi conti (' + tr.length + ' · ' + fmtEUR(tot) + ')' +
-        (sub.length ? ' · ' + sub.length + ' verso ' + sub[0].toAccount + ' importati come giroconto' : ' · non importati');
+      document.getElementById('stmtTransfersTitle').textContent = 'Passaggi tra i tuoi conti (' + tr.length + ' · ' + fmtEUR(tot) + ') · ' +
+        (sub.length ? sub.length + ' importati come giroconto, ' + (tr.length - sub.length) + ' esclusi' : 'tutti esclusi');
       document.getElementById('stmtTransferRows').innerHTML = tr.map(stmtRowHtml).join('');
     }
   }
@@ -2307,10 +2442,13 @@
     var prev = document.getElementById('stmtBalancePreview');
     if(!stmt.account){ prev.textContent = 'Scegli il conto per vedere come cambia il saldo.'; }
     else {
+      var m = manualRecord(stmt.account);
       var now = computeAccountBalance(stmt.account);
       var after = stmtBalanceAfter();
-      prev.innerHTML = 'Saldo di ' + escapeHtml(acc) + ' nel registro: <b>' + fmtEUR(now) + '</b> → dopo l\'importazione: <b>' + fmtEUR(after) + '</b>' +
-        (stmt.align && stmtClosingValue() != null ? ' (allineato all\'estratto)' : '');
+      prev.innerHTML = 'Saldo di ' + escapeHtml(acc) + ' scritto da te: <b>' + fmtEUR(m.value) + '</b>' + (m.date > '0000-00-00' ? ' (' + fmtDateIt(m.date) + ')' : '') +
+        ' · calcolato: <b>' + fmtEUR(now) + '</b> → dopo l\'importazione: <b>' + fmtEUR(after) + '</b>.' +
+        (m.date > '0000-00-00' ? ' I movimenti fino al ' + fmtDateIt(m.date) + ' sono già compresi nel saldo che hai scritto e non lo cambiano.' : '') +
+        (stmt.closing != null ? ' Saldo finale dell\'estratto: ' + fmtEUR(stmt.closing) + (stmt.closingDate ? ' al ' + fmtDateIt(stmt.closingDate) : '') + '.' : '');
     }
     var un = stmtUnresolved().length;
     var banner = document.getElementById('stmtAskBanner');
@@ -2329,7 +2467,8 @@
   /* saldo del conto dopo l'importazione */
   function stmtBalanceAfter(){
     var acc = stmt.account;
-    var newRows = stmt.rows.filter(function(r){ return r.include; });
+    var m = manualRecord(acc);
+    var newRows = stmt.rows.filter(function(r){ return r.include && r.date >= m.date; });
     var closing = stmtClosingValue();
     if(stmt.align && closing != null){
       var cutoff = stmt.closingDate || stmt.to || '9999-12-31';
@@ -2416,8 +2555,23 @@
     var t = e.target, i = Number(t.getAttribute('data-i'));
     if(!stmt || isNaN(i)) return;
     var r = stmt.rows[i];
+    if(t.getAttribute('data-act') === 'dest'){
+      stmtSetDest(r, t.value);
+      var abi = stmtAbi(r.raw);
+      if(abi && t.value && t.value !== 'spent'){
+        state.settings = state.settings || {};
+        state.settings.destMap = state.settings.destMap || {};
+        state.settings.destMap['abi:' + abi] = t.value;
+        stmt.rows.forEach(function(o){ if(o !== r && o.transfer && o.type === r.type && stmtAbi(o.raw) === abi) stmtSetDest(o, t.value); });
+        scheduleCloudSave();
+      }
+      stmtRenderRows(); stmtRenderSummary();
+      if(t.value === 'spent' && stmtUnresolved().length){ stmt.skipped = {}; stmtAskNext(); }
+      return;
+    }
     if(t.getAttribute('data-act') === 'inc'){
       r.include = t.checked;
+      if(r.transfer && r.include && !r.toAccount){ r.include = false; showToast('Scegli prima il conto collegato.'); }
       stmtRenderRows(); stmtRenderSummary();
     } else if(t.getAttribute('data-act') === 'cat'){
       if(!t.value) return;
@@ -2593,9 +2747,10 @@
     state.settings = (data.settings && typeof data.settings === 'object') ? data.settings : {};
     state.accounts = (data.accounts && typeof data.accounts === 'object') ? data.accounts : {};
     ACCOUNTS.forEach(function(a){ if(typeof state.accounts[a] !== 'number') state.accounts[a] = 0; });
+    var migrated = migrateManualBalances();
     var before = state.transactions.length;
     await processRecurring();
-    return state.transactions.length !== before;
+    return migrated || state.transactions.length !== before;
   }
 
   async function cloudLoad(){

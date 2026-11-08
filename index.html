@@ -792,7 +792,7 @@
     'Articoli per la casa':'#7C5C3E','Affitto':'#5C4A78','Utenze':'#2F8F8F','Regali e cose offerte':'#C97A3D',
     'Contribuzioni':'#6B7F3E','Viaggi':'#4A5A4F','Parcheggi':'#8A4A6B','Benzina':'#B0533E','Costi dell\'auto':'#2F3E6B',
     'Imprevisti':'#55524A','Abbonamenti':'#8A6BA8','Salute':'#C0546E',
-    'Stipendio':'#1F6F54','Roy':'#B8973E','Trading':'#3E6B8A','Giroconto':'#93A092'
+    'Stipendio':'#1F6F54','Roy':'#B8973E','Trading':'#3E6B8A','Giroconto':'#93A092','Ricarica conto esterno':'#93A092'
   };
   /* effetto di un movimento sul saldo di un conto: i giroconti tolgono da un conto e aggiungono all'altro */
   function txAccountEffect(t, name){
@@ -2153,7 +2153,11 @@
   function stmtHistory(){
     var h = {};
     state.transactions.slice().sort(function(a, b){ return (a.createdAt || '') < (b.createdAt || '') ? -1 : 1; }).forEach(function(t){
-      if(t.source !== 'estratto' || !t.note || t.type === 'transfer') return;
+      if(t.source !== 'estratto' || !t.note) return;
+      if(t.type === 'transfer'){
+        if(t.category === EXTERNAL_CAT){ var kx = stmtMerchant(t.note, 3); if(kx) h[(t.stmtType || 'expense') + '|' + kx] = 'T:esterno'; }
+        return;
+      }
       var k = stmtMerchant(t.note, 3);
       if(k) h[(t.stmtType || t.type) + '|' + k] = (t.refund ? 'R:' : '') + t.category;
     });
@@ -2164,7 +2168,10 @@
      Le scelte fatte a mano vengono ricordate (settings.destMap) */
   var ABI_ACCOUNTS = { '03576': 'BBVA', '03669': 'Revolut', '08713': 'BCC', '02008': 'Buddybank' };
   /* conti senza estratto: quello che ci mandi è speso, tranne il saldo che ci resta */
-  var SPEND_ACCOUNTS = { 'Buddybank': true };
+  var SPEND_ACCOUNTS = {};
+  var EXTERNAL_CAT = 'Ricarica conto esterno';
+  /* conti dove ricarichi soldi che poi spendi altrove: i bonifici verso questi sono "ricarica conto esterno" */
+  var SPEND_EXTERNAL = { 'Buddybank': true };
   function stmtAbi(raw){
     var m = String(raw || '').replace(/\s+/g, '').match(/IT\d{2}[A-Z](\d{5})\d{5}[A-Z0-9]{12}/);
     return m ? m[1] : null;
@@ -2190,8 +2197,17 @@
       if(!r.spentVia){ r.category = ''; r.categorySure = false; r.candidates = []; }
       return;
     }
-    r.toAccount = dest || null;
+    r.external = dest === 'external';
+    r.toAccount = (dest && dest !== 'external') ? dest : null;
     r.include = !!dest;
+  }
+  /* "Ricarica conto esterno": il movimento diventa un giroconto, non una spesa */
+  function stmtMakeExternal(r){
+    r.transfer = true; r.transferKind = 'esterno'; r.refund = false;
+    r.category = EXTERNAL_CAT; r.categorySure = true;
+    var d = r.type === 'expense' ? stmtGuessDest(r) : '';
+    stmtSetDest(r, d || 'external');
+    if(r.type === 'income' && !d){ r.external = true; r.include = true; }
   }
   /* bonifici verso un conto senza estratto: i più recenti restano sul conto fino al suo saldo,
      il resto conta come speso */
@@ -2239,6 +2255,7 @@
       /* bonifici al tuo conto Buddybank (beneficiario "Buddybank Omar") */
       if(!row.transfer && row.type === 'expense' && /(\bBEN|nominativo beneficiario:)\s*buddy ?bank|ricarica .*\bbuddy\b/i.test(row.raw)){ row.transfer = true; row.transferKind = 'intestatario'; }
       if(row.transfer) stmtSetDest(row, stmtGuessDest(row));
+      if(!row.transfer && row.category === 'T:esterno') stmtMakeExternal(row);
       return row;
     });
     stmtSplitSpendAccounts();
@@ -2260,7 +2277,7 @@
       var wasDup = r.dup;
       r.dup = !!counts[k];
       if(r.dup){ counts[k]--; r.include = false; }
-      else if(wasDup){ r.include = !r.transfer || !!r.toAccount; }
+      else if(wasDup){ r.include = !r.transfer || !!r.toAccount || !!r.external; }
     });
   }
 
@@ -2286,11 +2303,12 @@
     stmtRenderSummary();
   }
 
-  var TRANSFER_LABEL = { intestatario: 'a tuo nome', prelievo: 'contanti', giroconto: 'giroconto', revpoints: 'sottoconto' };
+  var TRANSFER_LABEL = { intestatario: 'a tuo nome', prelievo: 'contanti', giroconto: 'giroconto', revpoints: 'sottoconto', esterno: 'ricarica conto esterno' };
   function stmtCatOptions(r){
     var opt = function(val, label, sel){ return '<option value="' + escapeHtml(val) + '"' + (sel ? ' selected' : '') + '>' + escapeHtml(label) + '</option>'; };
     var html = r.category ? '' : '<option value="" selected>' + (r.type === 'expense' ? 'Che spesa è?' : 'Che entrata è?') + '</option>';
-    if(r.type === 'expense') return html + EXPENSE_CATEGORIES.map(function(c){ return opt(c, c, c === r.category); }).join('');
+    if(r.type === 'expense') return html + EXPENSE_CATEGORIES.map(function(c){ return opt(c, c, c === r.category); }).join('') +
+      '<optgroup label="Non è una spesa">' + opt('T:esterno', EXTERNAL_CAT + ' (giroconto)', false) + '</optgroup>';
     html += '<optgroup label="Entrata">' + INCOME_CATEGORIES.map(function(c){ return opt(c, c, !r.refund && c === r.category); }).join('') + '</optgroup>';
     html += '<optgroup label="Rimborso di una spesa">' + EXPENSE_CATEGORIES.map(function(c){ return opt('R:' + c, 'Rimborso · ' + c, r.refund && c === r.category); }).join('') + '</optgroup>';
     return html;
@@ -2302,6 +2320,7 @@
       if(a === stmt.account) return;
       opts += '<option value="' + escapeHtml(a) + '"' + (r.toAccount === a ? ' selected' : '') + '>' + lbl + escapeHtml(a) + '</option>';
     });
+    opts += '<option value="external"' + (r.external ? ' selected' : '') + '>' + (r.type === 'expense' ? 'verso' : 'da') + ' conto esterno (fuori dal patrimonio)</option>';
     if(r.type === 'expense') opts += '<option value="spent">speso (conta come uscita)</option>';
     return '<select data-act="dest" data-i="' + r.i + '" aria-label="Conto collegato">' + opts + '</select>';
   }
@@ -2340,7 +2359,7 @@
     box.hidden = !tr.length;
     if(tr.length){
       var tot = tr.reduce(function(a, r){ return a + r.amount; }, 0);
-      var sub = tr.filter(function(r){ return r.toAccount && r.include; });
+      var sub = tr.filter(function(r){ return (r.toAccount || r.external) && r.include; });
       document.getElementById('stmtTransfersTitle').textContent = 'Passaggi tra i tuoi conti (' + tr.length + ' · ' + fmtEUR(tot) + ') · ' +
         (sub.length ? sub.length + ' importati come giroconto, ' + (tr.length - sub.length) + ' esclusi' : 'tutti esclusi');
       document.getElementById('stmtTransferRows').innerHTML = tr.map(stmtRowHtml).join('');
@@ -2353,6 +2372,15 @@
 
   /* applica la risposta anche agli altri movimenti dello stesso esercente */
   function stmtApplyAnswer(r, cat, refund, allP2P){
+    if(cat === 'T:esterno'){
+      var n = 0;
+      stmtMakeExternal(r);
+      stmt.rows.forEach(function(o){
+        if(o === r || o.category || o.transfer || o.type !== r.type) return;
+        if((r.key && o.key === r.key) || (allP2P && r.p2p && o.p2p)){ stmtMakeExternal(o); n++; }
+      });
+      return n;
+    }
     if(cat && cat.indexOf('R:') === 0){ cat = cat.slice(2); refund = true; }
     var set = function(o){ o.category = cat; o.categorySure = true; o.refund = o.type === 'income' && !!refund; };
     set(r);
@@ -2389,7 +2417,9 @@
     };
     var sorted = function(list){ return list.slice().sort(function(a, b){ return (r.candidates.indexOf(a) < 0) - (r.candidates.indexOf(b) < 0); }); };
     var grid = '';
-    if(r.type === 'expense') grid = sorted(EXPENSE_CATEGORIES).map(function(c){ return btn(c, c); }).join('');
+    if(r.type === 'expense') grid = sorted(EXPENSE_CATEGORIES).map(function(c){ return btn(c, c); }).join('') +
+      '<p class="ask-group">Non è una spesa</p>' +
+      '<button type="button" data-cat="T:esterno"><span class="cat-dot" style="background:#93A092"></span><span class="t">' + EXTERNAL_CAT + '</span></button>';
     else {
       var refunds = '<p class="ask-group">Rimborso di una spesa (abbassa quella categoria)</p>' + EXPENSE_CATEGORIES.map(function(c){ return btn(c, 'R:' + c); }).join('');
       var incomes = '<p class="ask-group">Entrata</p>' + sorted(INCOME_CATEGORIES).map(function(c){ return btn(c, c); }).join('');
@@ -2500,10 +2530,15 @@
         isShared: false, peopleCount: null, recurringId: null,
         note: r.desc.slice(0, 140), source: 'estratto', stmtType: r.type, createdAt: now
       };
-      if(r.transfer && r.toAccount){
+      if(r.transfer && (r.toAccount || r.external)){
         /* giroconto verso/da un sottoconto (es. spiccioli RevPoints): sposta soldi, non è spesa né entrata */
-        tx.type = 'transfer'; tx.category = 'Giroconto'; tx.personalAmount = 0;
-        if(r.type === 'income'){ tx.account = r.toAccount; tx.toAccount = acc; } else { tx.toAccount = r.toAccount; }
+        tx.type = 'transfer'; tx.personalAmount = 0;
+        tx.category = (r.external || r.transferKind === 'esterno' || (r.toAccount && SPEND_EXTERNAL[r.toAccount])) ? EXTERNAL_CAT : 'Giroconto';
+        if(r.external){
+          /* conto fuori dal patrimonio: si muove solo il conto dell'estratto */
+          if(r.type === 'income'){ tx.account = null; tx.toAccount = acc; } else { tx.toAccount = null; }
+        }
+        else if(r.type === 'income'){ tx.account = r.toAccount; tx.toAccount = acc; } else { tx.toAccount = r.toAccount; }
       } else if(r.type === 'income' && r.refund){
         /* rimborso ricevuto (es. un amico ti ridà la sua quota): abbassa la spesa di quella categoria */
         tx.type = 'expense'; tx.amount = -r.amount; tx.personalAmount = -r.amount; tx.refund = true;
@@ -2571,7 +2606,7 @@
     }
     if(t.getAttribute('data-act') === 'inc'){
       r.include = t.checked;
-      if(r.transfer && r.include && !r.toAccount){ r.include = false; showToast('Scegli prima il conto collegato.'); }
+      if(r.transfer && r.include && !r.toAccount && !r.external){ r.include = false; showToast('Scegli prima il conto collegato.'); }
       stmtRenderRows(); stmtRenderSummary();
     } else if(t.getAttribute('data-act') === 'cat'){
       if(!t.value) return;

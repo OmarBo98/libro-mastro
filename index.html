@@ -1538,6 +1538,8 @@
   /* importi: 1.234,56 · 1234,56 · 1,234.56 · 1234.56 · con segno, €, CR/DR */
   var AMOUNT_RE = /([+\-−–]\s?)?(?:€|EUR)?\s?(\d{1,3}(?:[.,'\u00a0 ]\d{3})+|\d+)([.,])(\d{2})(?!\d)(\s?(?:€|EUR))?(\s?-(?![\d]))?(\s?(?:CR|DR|C|D)\b)?/g;
 
+  var INT_AMOUNT_RE = /([+\-−–])\s?(?:€|EUR)?\s?(\d{1,3}(?:[.'\u00a0 ]\d{3})+|\d+)(?![\d,]|\.\d)(\s?(?:€|EUR))?|(?:€|EUR)\s?(\d{1,3}(?:[.'\u00a0 ]\d{3})+|\d+)(?![\d,]|\.\d)|(\d{1,3}(?:[.'\u00a0 ]\d{3})+|\d+)\s?(?:€|EUR)(?![A-Za-z])/g;
+
   function stmtFindAmounts(item){
     var out = [], m, s = item.str;
     AMOUNT_RE.lastIndex = 0;
@@ -1558,6 +1560,26 @@
       var frac0 = s.length ? m.index / s.length : 0, frac1 = s.length ? (m.index + m[0].length) / s.length : 1;
       out.push({ value:value, neg:neg, pos:pos, cr:cr, signed:neg || pos, comma:hasDecimalComma,
         x0: item.x + item.w * frac0, x1: item.x + item.w * frac1, raw:m[0],
+        solo: s.trim().length - m[0].trim().length <= 4 });
+    }
+    /* importi interi, scritti a mano: solo se hanno il segno (+50, -100, - 40) o il simbolo € (40 €, € 1.500) */
+    INT_AMOUNT_RE.lastIndex = 0;
+    while((m = INT_AMOUNT_RE.exec(s))){
+      var start = m.index, end = m.index + m[0].length;
+      if(out.some(function(a){ var a0 = (a.x0 - item.x) / (item.w || 1) * s.length, a1 = (a.x1 - item.x) / (item.w || 1) * s.length; return start < a1 - 0.5 && end > a0 + 0.5; })) continue;
+      var sign = m[1], num = m[2] || m[4] || m[5];
+      var euro = !!(m[3] || m[4] || m[5]);
+      if(!sign && !euro) continue;
+      var pre = s.slice(0, start), post = s.slice(end);
+      if(sign && pre && !/[\s(:|]$/.test(pre)) continue;           /* "2026-11", "A-1": non è un importo */
+      if(/[\d\/]$/.test(pre) || /^\s?[%\/:.,]?\d/.test(post) || /^\s?%/.test(post)) continue;
+      if(!euro && /^\s*[A-Za-zÀ-ü]/.test(post)) continue;             /* "1 gen - 5 nov": è un intervallo di date */
+      var v = Number(num.replace(/[.'\u00a0 ]/g, ''));
+      if(!(v > 0)) continue;
+      var negI = !!(sign && /[\-−–]/.test(sign));
+      var f0 = s.length ? start / s.length : 0, f1 = s.length ? end / s.length : 1;
+      out.push({ value: v, neg: negI, pos: !!(sign && /\+/.test(sign)), cr: false, signed: !!sign, comma: false,
+        x0: item.x + item.w * f0, x1: item.x + item.w * f1, raw: m[0],
         solo: s.trim().length - m[0].trim().length <= 4 });
     }
     return out;
@@ -1687,6 +1709,7 @@
     if(stmtIsOwnTransfer(desc, ownerName, type)) return 'intestatario';
     if(/prelievo|prelevamento|\bbancomat\b|\batm\b|cash withdrawal|withdrawal/i.test(desc) && !/bancomat pay/i.test(desc)) return 'prelievo';
     if(TRANSFER_WORDS.test(desc)) return 'giroconto';
+    if(/\bricaric/i.test(desc) && !/telefon|cellular|\bsim\b|\btim\b|vodafone|iliad|wind|ho\.? ?mobile|kena|very mobile|fastweb|coop ?voce|postemobile/i.test(desc)) return 'ricarica';
     if(BANK_PATTERNS.some(function(b){ return b.account !== bankAccount && b.account !== 'Amex' && new RegExp(b.re.source, 'i').test(desc); })) return 'giroconto';
     return null;
   }
@@ -2125,7 +2148,11 @@
   }
 
   function stmtStart(lines, firstPage, fullText, isTable){
-    var bank = stmtDetectBank(firstPage, fullText, stmtFile.name, isTable);
+    /* la banca si cerca nell'intestazione, non nelle righe dei movimenti
+       (es. "Ricarica Revolut" in un estratto BCC) */
+    var notTx = lines.filter(function(l){ return !stmtParseDateAt(l.items[0].str.trim(), 2000); });
+    var txt = function(ls){ return ls.map(function(l){ return l.items.map(function(i){ return i.str; }).join(' '); }).join('\n'); };
+    var bank = stmtDetectBank(txt(notTx.filter(function(l){ return l.page === 1; })), txt(notTx), stmtFile.name, isTable);
     stmt = { fileName: stmtFile.name, lines: lines, bankDetected: bank, account: bank };
     stmtAnalyse();
     if(!stmt.rows.length){
@@ -2189,6 +2216,8 @@
       var b = BANK_PATTERNS[i];
       if(b.account !== stmt.account && b.account !== 'Amex' && new RegExp(b.re.source, 'i').test(r.raw)) return b.account;
     }
+    /* "Ricarica" senza altre informazioni: soldi spostati su un conto esterno */
+    if(r.transferKind === 'ricarica') return 'external';
     return '';
   }
   function stmtSetDest(r, dest){
@@ -2303,7 +2332,7 @@
     stmtRenderSummary();
   }
 
-  var TRANSFER_LABEL = { intestatario: 'a tuo nome', prelievo: 'contanti', giroconto: 'giroconto', revpoints: 'sottoconto', esterno: 'ricarica conto esterno' };
+  var TRANSFER_LABEL = { intestatario: 'a tuo nome', prelievo: 'contanti', giroconto: 'giroconto', revpoints: 'sottoconto', esterno: 'ricarica conto esterno', ricarica: 'ricarica' };
   function stmtCatOptions(r){
     var opt = function(val, label, sel){ return '<option value="' + escapeHtml(val) + '"' + (sel ? ' selected' : '') + '>' + escapeHtml(label) + '</option>'; };
     var html = r.category ? '' : '<option value="" selected>' + (r.type === 'expense' ? 'Che spesa è?' : 'Che entrata è?') + '</option>';

@@ -183,6 +183,24 @@
   }
   .tx-del:hover{color:var(--expense);}
   .tx-note{font-size:12px;color:var(--ink-soft);font-style:italic;margin-top:4px;line-height:1.4;}
+  .multi-box{margin-top:10px;padding:10px 12px;border:1px dashed var(--line);border-radius:var(--radius-sm);}
+  .multi-gen{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px;color:var(--ink-soft);margin-bottom:10px;}
+  .multi-gen select,.multi-gen input{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:14px;color:var(--ink);}
+  #multiBox .multi-gen select,#multiBox .multi-gen input{width:auto;margin:0;padding:6px 8px;font-size:14px;}
+  #multiBox .multi-gen input{width:64px;}
+  #multiBox .multi-item input{padding:8px 9px;font-size:14px;}
+  #multiBox .multi-item input[readonly]{background:var(--paper);color:var(--ink-soft);}
+  .multi-gen-btn,.multi-add{border:1px solid var(--line);background:#fff;border-radius:8px;font-size:12.5px;padding:6px 10px;color:var(--ink);}
+  .multi-gen-btn:hover,.multi-add:hover{border-color:var(--ink);}
+  .multi-list{display:flex;flex-direction:column;gap:6px;margin-bottom:8px;}
+  .multi-item{display:flex;align-items:center;gap:8px;}
+  .multi-item .multi-n{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);width:22px;text-align:right;flex-shrink:0;}
+  .multi-item input{flex:1;min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:14px;color:var(--ink);}
+  .multi-item input[readonly]{background:var(--paper);color:var(--ink-soft);}
+  .multi-item button{border:none;background:none;font-size:18px;line-height:1;color:var(--ink-faint);padding:4px 6px;}
+  .multi-item button:hover{color:var(--expense);}
+  .multi-sum{font-size:12.5px;color:var(--ink-soft);margin:8px 0 0;}
+  .multi-sum b{font-family:var(--font-mono);color:var(--ink);}
   .tx-search{margin:0 0 14px;}
   .tx-search-bar{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;padding:0 6px 0 12px;}
   .tx-search-bar:focus-within{border-color:var(--gold);}
@@ -243,7 +261,7 @@
   .modal-sheet h2{font-family:var(--font-display);font-size:18px;margin:0 0 16px;}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:5px;font-weight:500;}
-  .field input[type=number],.field input[type=date],.field select{
+  .field input[type=number],.field input[type=date],.field input[type=text],.field select{
     width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);
     background:#fff;font-size:15px;color:var(--ink);
   }
@@ -253,7 +271,8 @@
     padding:4px 0;cursor:pointer;
   }
   .switch-row span:first-child{font-size:14px;font-weight:500;}
-  .switch{position:relative;width:42px;height:25px;flex-shrink:0;}
+  .field label.switch-row{display:flex;margin-bottom:0;}
+  .switch{position:relative;display:inline-block;width:42px;height:25px;flex-shrink:0;}
   .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;}
   .switch-slider{
     position:absolute;inset:0;background:var(--line);border-radius:20px;
@@ -777,6 +796,32 @@
       <label for="inputPeopleCount">Tra quante persone viene divisa?</label>
       <input type="number" id="inputPeopleCount" min="2" step="1" value="2">
       <p class="hint" id="shareHint"></p>
+    </div>
+
+    <div class="field" id="multiRow">
+      <label class="switch-row">
+        <span>Ripeti in più date</span>
+        <span class="switch"><input type="checkbox" id="toggleMulti"><span class="switch-slider"></span></span>
+      </label>
+      <div class="multi-box" id="multiBox" hidden>
+        <p class="hint" style="margin:0 0 8px;">Per registrare la stessa spesa più volte nel passato (es. affitto o sedute già pagate). La prima data è quella sopra; aggiungi le altre a mano o generale in automatico.</p>
+        <div class="multi-gen">
+          <span>Ogni</span>
+          <select id="multiStep">
+            <option value="1m">mese</option>
+            <option value="1w">settimana</option>
+            <option value="2w">2 settimane</option>
+            <option value="1d">giorno</option>
+          </select>
+          <span>per</span>
+          <input type="number" id="multiCount" min="2" max="120" step="1" value="6" inputmode="numeric" aria-label="Quante volte in tutto">
+          <span>volte</span>
+          <button type="button" class="multi-gen-btn" id="multiGenBtn">Genera</button>
+        </div>
+        <div class="multi-list" id="multiList"></div>
+        <button type="button" class="multi-add" id="multiAddBtn">＋ Aggiungi una data</button>
+        <p class="multi-sum" id="multiSum"></p>
+      </div>
     </div>
 
     <div class="field" id="recurringRow">
@@ -1588,6 +1633,10 @@
     document.getElementById('inputDate').value = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
     document.getElementById('toggleShared').checked = false;
     document.getElementById('toggleRecurring').checked = false;
+    document.getElementById('toggleMulti').checked = false;
+    document.getElementById('multiBox').hidden = true;
+    multiDates = [];
+    renderMultiList();
     document.getElementById('inputPeopleCount').value = 2;
     document.getElementById('inputNote').value = '';
     document.getElementById('peopleCountField').style.display = 'none';
@@ -1615,6 +1664,58 @@
     if(!dateVal) return;
     var d = new Date(dateVal+'T00:00:00');
     document.getElementById('recurringHint').textContent = 'Verrà aggiunta automaticamente ogni mese, il giorno '+d.getDate()+', quando apri il registro.';
+  }
+
+  /* ---------- stessa spesa in più date ---------- */
+  var multiDates = [];
+  function isoOf(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function multiAllDates(){
+    var first = document.getElementById('inputDate').value;
+    return (first ? [first] : []).concat(multiDates.filter(Boolean));
+  }
+  function renderMultiList(){
+    var list = document.getElementById('multiList');
+    if(!list) return;
+    var first = document.getElementById('inputDate').value;
+    var html = '<div class="multi-item"><span class="multi-n">1</span><input type="date" value="' + escapeHtml(first) + '" readonly aria-label="Prima data (campo Data)"><button type="button" disabled style="visibility:hidden">×</button></div>';
+    multiDates.forEach(function(d, i){
+      html += '<div class="multi-item"><span class="multi-n">' + (i + 2) + '</span><input type="date" data-mi="' + i + '" value="' + escapeHtml(d) + '" aria-label="Data ' + (i + 2) + '"><button type="button" data-mdel="' + i + '" aria-label="Togli questa data">×</button></div>';
+    });
+    list.innerHTML = html;
+    updateMultiSum();
+  }
+  function updateMultiSum(){
+    var el = document.getElementById('multiSum');
+    if(!el) return;
+    var amount = parseFloat(document.getElementById('inputAmount').value) || 0;
+    var n = multiAllDates().length;
+    var dup = multiAllDates().length - new Set(multiAllDates()).size;
+    el.innerHTML = n ? 'Registro <b>' + n + '</b> ' + (n === 1 ? 'movimento' : 'movimenti') + (amount ? ' da ' + fmtEUR(amount) + ' · totale <b>' + fmtEUR(amount * n) + '</b>' : '') +
+      (dup ? ' · ' + dup + (dup === 1 ? ' data ripetuta' : ' date ripetute') : '') : 'Scegli la data qui sopra.';
+  }
+  function multiGenerate(){
+    var first = document.getElementById('inputDate').value;
+    if(!first){ showFormError('Scegli prima la data della prima volta.'); return; }
+    var n = parseInt(document.getElementById('multiCount').value, 10);
+    if(!n || n < 2){ showFormError('Indica quante volte in tutto (almeno 2).'); return; }
+    n = Math.min(n, 120);
+    var step = document.getElementById('multiStep').value;
+    var d0 = new Date(first + 'T12:00:00'), day = d0.getDate(), out = [];
+    for(var i = 1; i < n; i++){
+      var d;
+      if(step === '1m'){
+        d = new Date(d0.getFullYear(), d0.getMonth() + i, 1, 12);
+        var last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        d.setDate(Math.min(day, last));
+      } else {
+        var days = step === '1w' ? 7 : step === '2w' ? 14 : 1;
+        d = new Date(d0.getTime()); d.setDate(d0.getDate() + days * i);
+      }
+      out.push(isoOf(d));
+    }
+    multiDates = out;
+    document.getElementById('formError').style.display = 'none';
+    renderMultiList();
   }
 
   function showFormError(msg){
@@ -1652,6 +1753,21 @@
       isShared: isShared, peopleCount: peopleCount, recurringId: null, note: note,
       createdAt: new Date().toISOString()
     };
+
+    if(document.getElementById('toggleMulti').checked){
+      var extra = multiDates.filter(Boolean);
+      if(multiDates.length !== extra.length){ showFormError('Completa o togli le date vuote.'); return; }
+      if(!extra.length){ showFormError('Aggiungi almeno un\'altra data, oppure spegni "Ripeti in più date".'); return; }
+      var seriesId = uid(), nowIso = new Date().toISOString();
+      [date].concat(extra).forEach(function(d){
+        state.transactions.push(Object.assign({}, tx, { id: uid(), date: d, seriesId: seriesId, createdAt: nowIso }));
+      });
+      await saveTransactions();
+      closeModal();
+      renderAll();
+      showToast('Registrati ' + (extra.length + 1) + ' movimenti da ' + fmtEUR(amount) + ' (totale ' + fmtEUR(amount * (extra.length + 1)) + ').');
+      return;
+    }
 
     if(isRecurring){
       var d = new Date(date+'T00:00:00');
@@ -1710,6 +1826,34 @@
   document.getElementById('btnAddExpense').addEventListener('click', function(){ openModal('expense'); });
   document.getElementById('btnAddIncome').addEventListener('click', function(){ openModal('income'); });
   document.getElementById('btnCancel').addEventListener('click', closeModal);
+  document.getElementById('toggleMulti').addEventListener('change', function(){
+    var on = this.checked;
+    document.getElementById('multiBox').hidden = !on;
+    /* le date passate si registrano qui; la ricorrenza automatica serve per il futuro */
+    if(on){ document.getElementById('toggleRecurring').checked = false; document.getElementById('recurringHint').style.display = 'none'; }
+    document.getElementById('recurringRow').style.display = (on || currentModalType !== 'expense') ? 'none' : 'block';
+    renderMultiList();
+  });
+  document.getElementById('multiGenBtn').addEventListener('click', multiGenerate);
+  document.getElementById('multiAddBtn').addEventListener('click', function(){
+    var all = multiAllDates(), last = all[all.length - 1];
+    var d = last ? new Date(last + 'T12:00:00') : new Date();
+    if(last){ var day = d.getDate(); d = new Date(d.getFullYear(), d.getMonth() + 1, 1, 12); d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); }
+    multiDates.push(isoOf(d));
+    renderMultiList();
+    var inputs = document.querySelectorAll('#multiList input[data-mi]');
+    if(inputs.length) inputs[inputs.length - 1].focus();
+  });
+  document.getElementById('multiList').addEventListener('input', function(e){
+    var i = e.target.getAttribute('data-mi');
+    if(i != null){ multiDates[Number(i)] = e.target.value; updateMultiSum(); }
+  });
+  document.getElementById('multiList').addEventListener('click', function(e){
+    var i = e.target.getAttribute && e.target.getAttribute('data-mdel');
+    if(i != null){ multiDates.splice(Number(i), 1); renderMultiList(); }
+  });
+  document.getElementById('inputDate').addEventListener('change', function(){ if(document.getElementById('toggleMulti').checked) renderMultiList(); });
+  document.getElementById('inputAmount').addEventListener('input', updateMultiSum);
   document.getElementById('modalOverlay').addEventListener('click', function(e){
     if(e.target.id === 'modalOverlay') closeModal();
   });

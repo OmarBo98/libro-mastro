@@ -882,6 +882,20 @@
           <span class="settings-item-sub">Ripristina i dati da un file di backup esportato in precedenza</span>
         </span>
       </label>
+      <button class="settings-item" id="btnExportData">
+        <span class="settings-item-icon">⭳</span>
+        <span>
+          <span class="settings-item-title">Scarica backup</span>
+          <span class="settings-item-sub">Salva sul dispositivo un file con tutti i dati di oggi</span>
+        </span>
+      </button>
+      <button class="settings-item danger" id="btnClearMovements">
+        <span class="settings-item-icon">⌫</span>
+        <span>
+          <span class="settings-item-title">Svuota i movimenti</span>
+          <span class="settings-item-sub">Cancella spese, entrate, giroconti, ricorrenti ed estratti caricati. Restano i conti e i saldi scritti da te. Prima scarico un backup.</span>
+        </span>
+      </button>
       <button class="settings-item danger" id="btnResetData">
         <span class="settings-item-icon">🗑</span>
         <span>
@@ -924,7 +938,7 @@
 
   var EXPENSE_CATEGORIES = ['Groceries','Cibo fuori','Abbigliamento','Svago e Sport','Articoli per la casa','Affitto','Utenze','Regali e cose offerte','Contribuzioni','Viaggi','Parcheggi','Benzina','Costi dell\'auto','Imprevisti','Abbonamenti','Salute'];
   var INCOME_CATEGORIES = ['Stipendio','Roy','Trading'];
-  var ACCOUNTS = ['BCC','BBVA','Contanti','Arangio','Traderepublic','Wise','PuPrime','Revolut','RevPoints','Buddybank','Amex'];
+  var ACCOUNTS = ['BCC','BBVA','Contanti','Arangio','Traderepublic','Wise','PuPrime','Revolut','RevPoints','Buddybank','PayPal','Amex'];
   var CATEGORY_COLORS = {
     'Groceries':'#1F6F54','Cibo fuori':'#A83E2C','Abbigliamento':'#B8973E','Svago e Sport':'#3E6B8A',
     'Articoli per la casa':'#7C5C3E','Affitto':'#5C4A78','Utenze':'#2F8F8F','Regali e cose offerte':'#C97A3D',
@@ -1919,6 +1933,7 @@
           state.transactions = parsed.transactions;
           state.recurring = parsed.recurring;
           state.accounts = (parsed.accounts && typeof parsed.accounts === 'object') ? parsed.accounts : {};
+          if(parsed.settings && typeof parsed.settings === 'object') state.settings = parsed.settings;
           ACCOUNTS.forEach(function(a){ if(typeof state.accounts[a] !== 'number') state.accounts[a] = 0; });
           await saveTransactions();
           await saveRecurring();
@@ -1936,6 +1951,43 @@
   }
 
   document.getElementById('importFileInput').addEventListener('change', handleImportFile);
+  function downloadBackup(){
+    var d = new Date();
+    var name = 'libro-mastro-backup-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.json';
+    var url = URL.createObjectURL(new Blob([cloudPayload()], { type: 'application/json' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    return name;
+  }
+  /* svuota i movimenti ma tiene conti, saldi scritti a mano, nome e scelte sui giroconti */
+  async function clearMovements(){
+    var n = state.transactions.length;
+    var file = downloadBackup();
+    state.transactions = [];
+    state.recurring = [];
+    state.accounts = {};
+    state.settings = state.settings || {};
+    delete state.settings.imports;
+    delete state.settings.opening;
+    await saveTransactions();
+    await saveRecurring();
+    await saveAccounts();
+    renderAll();
+    showToast('Cancellati ' + n + ' movimenti. Backup salvato come ' + file + '. I saldi scritti da te restano.');
+  }
+  document.getElementById('btnExportData').addEventListener('click', function(){
+    var f = downloadBackup();
+    showToast('Backup salvato: ' + f);
+  });
+  document.getElementById('btnClearMovements').addEventListener('click', function(){
+    closeSettings();
+    var n = state.transactions.length, r = (state.recurring || []).length;
+    showConfirm('Cancellare tutti i ' + n + ' movimenti' + (r ? (r === 1 ? ' e la spesa ricorrente' : ' e le ' + r + ' spese ricorrenti') : '') +
+      ', l\'elenco degli estratti caricati e i saldi al 1° gennaio? Restano solo i conti e i saldi scritti da te. Prima scarico un backup sul dispositivo: potrai ripristinarlo da "Importa backup".', clearMovements);
+  });
+
   document.getElementById('btnResetData').addEventListener('click', function(){
     closeSettings();
     showConfirm(cloudTokenValid() ? 'Cancellare tutti i dati, anche quelli salvati su Google Drive? L\'azione è irreversibile.' : 'Cancellare tutti i dati salvati nel registro? L\'azione è irreversibile.', resetAllData);
@@ -1961,7 +2013,8 @@
     { account:'Arangio', re:/arangio/gi },
     { account:'Buddybank', re:/buddy ?bank|\bbuddy\b/gi },
     /* solo dal nome del file (es. movimenti_contanti_2026.csv): "contanti" compare anche nei movimenti delle banche */
-    { account:'Contanti', re:/contanti/gi, fileOnly: true }
+    { account:'Contanti', re:/contanti/gi, fileOnly: true },
+    { account:'PayPal', re:/paypal/gi, fileOnly: true }
   ];
   var CARD_ACCOUNTS = { 'Amex': true };
 

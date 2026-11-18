@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Libro Mastro</title>
+<title>MyFluentFinance</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -523,7 +523,7 @@
     <div class="brand">
       <div class="brand-mark">€</div>
       <div>
-        <h1>Libro Mastro</h1>
+        <h1>MyFluentFinance</h1>
         <p class="brand-sub">registro personale</p>
       </div>
     </div>
@@ -1925,7 +1925,7 @@
       try{
         var parsed = JSON.parse(ev.target.result);
         if(!parsed || !Array.isArray(parsed.transactions) || !Array.isArray(parsed.recurring)){
-          showToast('File non valido: non sembra un backup di Libro Mastro.');
+          showToast('File non valido: non sembra un backup di MyFluentFinance.');
           return;
         }
         closeSettings();
@@ -1953,7 +1953,7 @@
   document.getElementById('importFileInput').addEventListener('change', handleImportFile);
   function downloadBackup(){
     var d = new Date();
-    var name = 'libro-mastro-backup-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.json';
+    var name = 'myfluentfinance-backup-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '-' + pad(d.getHours()) + pad(d.getMinutes()) + '.json';
     var url = URL.createObjectURL(new Blob([cloudPayload()], { type: 'application/json' }));
     var a = document.createElement('a');
     a.href = url; a.download = name;
@@ -2001,7 +2001,7 @@
   /* ---------- estratti conto PDF ----------
      Il PDF viene letto qui, nel browser, con pdf.js: non viene salvato né inviato
      da nessuna parte. Dal testo si ricavano banca, movimenti e saldi; l'utente
-     controlla l'anteprima prima che qualcosa entri nel libro mastro. */
+     controlla l'anteprima prima che qualcosa entri nel registro. */
   var BANK_PATTERNS = [
     { account:'BCC', re:/banca di credito cooperativo|credito cooperativo|\bbcc\b|iccrea/gi },
     { account:'BBVA', re:/\bbbva\b|banco bilbao/gi },

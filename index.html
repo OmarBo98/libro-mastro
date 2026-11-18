@@ -183,6 +183,27 @@
   }
   .tx-del:hover{color:var(--expense);}
   .tx-note{font-size:12px;color:var(--ink-soft);font-style:italic;margin-top:4px;line-height:1.4;}
+  .tx-search{margin:0 0 14px;}
+  .tx-search-bar{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;padding:0 6px 0 12px;}
+  .tx-search-bar:focus-within{border-color:var(--gold);}
+  .tx-search-icon{color:var(--ink-faint);font-size:17px;line-height:1;}
+  .tx-search-bar input{flex:1;min-width:0;border:none;outline:none;background:transparent;padding:11px 0;font-size:15px;color:var(--ink);}
+  .tx-filter-toggle{border:1px solid var(--line);background:var(--paper);border-radius:8px;font-size:12.5px;padding:5px 10px;color:var(--ink-soft);white-space:nowrap;}
+  .tx-filter-toggle.on{border-color:var(--gold);background:var(--gold-soft);color:var(--ink);font-weight:600;}
+  .tx-filters{margin-top:8px;padding:10px 12px;border:1px dashed var(--line);border-radius:var(--radius-sm);display:flex;flex-direction:column;gap:10px;}
+  .tx-filter-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .tx-filter-row label{display:flex;flex-direction:column;gap:4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);min-width:0;}
+  .tx-filter-row input,.tx-filter-row select{width:100%;min-width:0;padding:8px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;font-size:14px;color:var(--ink);text-transform:none;letter-spacing:0;}
+  .tx-periods{display:flex;flex-wrap:wrap;gap:6px;}
+  .tx-periods button{border:1px solid var(--line);background:#fff;border-radius:20px;font-size:12px;padding:4px 10px;color:var(--ink-soft);}
+  .tx-periods button:hover{border-color:var(--ink);color:var(--ink);}
+  .tx-search-summary{margin-top:8px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:12.5px;color:var(--ink-soft);}
+  .tx-search-summary b{font-family:var(--font-mono);font-weight:600;}
+  .tx-search-summary b.inc{color:var(--income);}
+  .tx-search-summary b.out{color:var(--expense);}
+  .tx-search-summary button{margin-left:auto;background:none;border:none;color:var(--ink-soft);font-size:12px;text-decoration:underline;padding:2px 0;}
+  .tx-month-sum{float:right;font-family:var(--font-mono);text-transform:none;letter-spacing:0;}
+  mark.tx-hit{background:var(--gold-soft);color:inherit;border-radius:2px;padding:0 1px;}
 
   /* ---------- Bottom nav ---------- */
   .bottom-nav{
@@ -448,6 +469,30 @@
   .acc-diff.bad{color:var(--expense);}
   .acc-right{display:flex;flex-direction:column;align-items:flex-end;}
   .patr-compare{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-soft);}
+  .account-item.acc-card{flex-wrap:wrap;row-gap:4px;}
+  .acc-detail{flex-basis:100%;display:flex;flex-direction:column;gap:3px;font-size:11.5px;line-height:1.45;color:var(--ink-soft);margin-top:4px;padding-top:6px;border-top:1px dashed var(--line);}
+  .acc-detail i{font-style:normal;color:var(--ink-faint);}
+  .acc-detail b{font-family:var(--font-mono);font-weight:600;color:var(--ink);}
+  .acc-detail b.neg{color:var(--expense);}
+  .acc-warn{color:var(--expense);}
+  .patr-compare{flex-direction:column;gap:4px;line-height:1.45;}
+  .patr-compare b.inc{color:var(--income);}
+  .patr-compare b.out{color:var(--expense);}
+  .stm-imports{margin-top:22px;}
+  .stm-imports h3{font-family:var(--font-display);font-size:15px;margin:0 0 4px;}
+  .imp-cov{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper-card);padding:8px 12px;margin:10px 0 14px;display:flex;flex-direction:column;gap:5px;}
+  .imp-cov-row{display:flex;gap:10px;font-size:12.5px;line-height:1.4;}
+  .imp-cov-row b{min-width:96px;flex-shrink:0;}
+  .imp-cov-row > span{min-width:0;font-family:var(--font-mono);font-size:11.5px;}
+  .imp-none{color:var(--ink-faint);}
+  .imp-gap{color:var(--expense);}
+  .imp-item{border-bottom:1px dashed var(--line);padding:9px 0;}
+  .imp-item:last-child{border-bottom:none;}
+  .imp-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+  .imp-file{font-family:var(--font-mono);font-size:12px;overflow-wrap:anywhere;min-width:0;}
+  .imp-acc{font-size:12px;font-weight:600;white-space:nowrap;}
+  .imp-facts{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:11.5px;color:var(--ink-soft);margin-top:3px;}
+  .imp-at{font-size:11px;color:var(--ink-faint);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -517,6 +562,43 @@
 
       <section class="block">
         <h2>Movimenti</h2>
+        <div class="tx-search" id="txSearch">
+          <div class="tx-search-bar">
+            <span class="tx-search-icon" aria-hidden="true">⌕</span>
+            <input type="search" id="txQuery" placeholder="Cerca nelle note, categorie, conti, importi…" autocomplete="off" aria-label="Cerca movimenti">
+            <button type="button" class="tx-filter-toggle" id="txFilterToggle" aria-expanded="false">Filtri</button>
+          </div>
+          <div class="tx-filters" id="txFilters" hidden>
+            <div class="tx-filter-row">
+              <label>Dal<input type="date" id="txFrom"></label>
+              <label>Al<input type="date" id="txTo"></label>
+            </div>
+            <div class="tx-periods" id="txPeriods">
+              <button type="button" data-p="month">Questo mese</button>
+              <button type="button" data-p="prev">Mese scorso</button>
+              <button type="button" data-p="3m">Ultimi 3 mesi</button>
+              <button type="button" data-p="year">Quest'anno</button>
+            </div>
+            <div class="tx-filter-row">
+              <label>Categoria<select id="txCat"></select></label>
+              <label>Tipo<select id="txType">
+                <option value="">Tutti</option>
+                <option value="expense">Spese</option>
+                <option value="income">Entrate</option>
+                <option value="refund">Rimborsi</option>
+                <option value="transfer">Giroconti</option>
+              </select></label>
+            </div>
+            <div class="tx-filter-row">
+              <label>Conto<select id="txAcc"></select></label>
+              <label>Nelle note<select id="txNoteOnly">
+                <option value="">Cerca ovunque</option>
+                <option value="1">Solo nelle note</option>
+              </select></label>
+            </div>
+          </div>
+          <div class="tx-search-summary" id="txSummary" hidden></div>
+        </div>
         <div id="txList"><div class="empty-state">Nessun movimento ancora.<br>Aggiungi la tua prima spesa o entrata.</div></div>
       </section>
     </div>
@@ -542,7 +624,7 @@
 
     <div class="page hidden" id="page-patrimonio">
       <h2 class="page-title">Situazione patrimoniale</h2>
-      <p class="page-note">Il saldo grande è quello reale che scrivi tu con ✎: l'app non lo cambia mai. Sotto, il saldo <b>calcolato</b> parte dal tuo e aggiunge le entrate, le uscite e i giroconti registrati dopo quella data; la differenza ti dice se manca qualcosa.</p>
+      <p class="page-note">Il saldo grande è quello reale che scrivi tu con ✎: l'app non lo cambia mai. I conti <b>calcolati</b> invece non partono dal tuo saldo: partono dal saldo al 1° gennaio 2026 (preso da un estratto o scritto da te con ✎) e sommano entrate, uscite e giroconti registrati. Se il saldo al 1/1 non è noto, ti mostro quanto servirebbe per tornare col tuo saldo: se ti sembra troppo alto, mancano delle uscite.</p>
 
       <section class="balance-card" style="margin-bottom:18px;">
         <div class="balance-item balance-total" style="align-items:flex-start;">
@@ -629,6 +711,12 @@
           <button class="btn-solid" id="stmtImport" type="button">Importa</button>
         </div>
       </div>
+
+      <section class="stm-imports" id="stmtImportsBox">
+        <h3>Estratti caricati</h3>
+        <p class="hint">Per ogni conto: i periodi coperti dagli estratti e quelli che mancano dal 1° gennaio. Nei periodi scoperti le uscite di quel conto non sono nel registro.</p>
+        <div id="stmtImportsList"></div>
+      </section>
     </div>
   </main>
 
@@ -712,8 +800,13 @@
   <div class="confirm-sheet">
     <h2 id="accountEditTitle" style="font-family:var(--font-display);font-size:16px;margin:0 0 16px;">Aggiorna saldo</h2>
     <div class="field">
-      <label for="inputAccountBalance">Saldo attuale (€)</label>
+      <label for="inputAccountBalance">Saldo reale di oggi, scritto da te (€)</label>
       <input type="number" id="inputAccountBalance" step="0.01">
+    </div>
+    <div class="field">
+      <label for="inputAccountOpening">Saldo al 1° gennaio 2026 (€)</label>
+      <input type="number" id="inputAccountOpening" step="0.01" placeholder="non noto">
+      <p class="hint" id="accountOpeningHint"></p>
     </div>
     <div class="modal-actions">
       <button class="btn-ghost" id="accountEditCancel">Annulla</button>
@@ -928,17 +1021,94 @@
   function txAfterManual(t, m){
     return t.date > m.date || (t.date === m.date && (t.createdAt || '') > (m.at || ''));
   }
-  function computeAccountBalance(name){
+  /* I conti calcolati NON partono dal saldo scritto da te: partono dal saldo al 1° gennaio
+     (preso da un estratto o scritto da te, altrimenti sconosciuto) e sommano i movimenti. */
+  var YEAR_START = '2026-01-01';
+  function r2(x){ return Math.round(x * 100) / 100; }
+  function openingRecord(name){
+    var o = state.settings && state.settings.opening && state.settings.opening[name];
+    return (o && typeof o.value === 'number') ? o : null;
+  }
+  function accountMovements(name){
+    var s = 0;
+    state.transactions.forEach(function(t){ if(t.date >= YEAR_START) s += txAccountEffect(t, name); });
+    return r2(s);
+  }
+  function accountFlows(name){
+    var f = { inc: 0, out: 0, tin: 0, tout: 0, n: 0 };
+    state.transactions.forEach(function(t){
+      if(t.date < YEAR_START) return;
+      var e = txAccountEffect(t, name);
+      if(!e) return;
+      f.n++;
+      if(t.type === 'transfer'){ if(e > 0) f.tin += e; else f.tout -= e; }
+      else if(t.type === 'income') f.inc += e;
+      else f.out -= e;
+    });
+    return f;
+  }
+  /* saldo al 1/1 che servirebbe per arrivare al saldo scritto da te con i movimenti registrati */
+  function impliedOpening(name){
     var m = manualRecord(name);
-    var sum = 0;
-    state.transactions.forEach(function(t){ if(txAfterManual(t, m)) sum += txAccountEffect(t, name); });
-    return m.value + sum;
+    if(!(m.date > '0000-00-00')) return null;
+    var s = 0;
+    state.transactions.forEach(function(t){ if(t.date >= YEAR_START && !txAfterManual(t, m)) s += txAccountEffect(t, name); });
+    return r2(m.value - s);
+  }
+  function computeAccountBalance(name){
+    var o = openingRecord(name);
+    return o ? r2(o.value + accountMovements(name)) : null;
   }
   function computeTotalPatrimonio(){
-    var total = 0;
-    ACCOUNTS.forEach(function(a){ total += computeAccountBalance(a); });
-    return total;
+    var total = 0, unknown = 0;
+    ACCOUNTS.forEach(function(a){ var b = computeAccountBalance(a); if(b == null) unknown++; else total += b; });
+    return { total: r2(total), unknown: unknown };
   }
+  /* estratti caricati: quelli registrati + quelli importati prima che li registrassi */
+  function stmtTxAccount(t){
+    return (t.type === 'transfer' && t.stmtType === 'income') ? t.toAccount : t.account;
+  }
+  function importsList(){
+    var list = ((state.settings && state.settings.imports) || []).map(function(i){ return Object.assign({}, i); });
+    var known = {};
+    list.forEach(function(i){ known[i.id] = i; i.count = 0; });
+    var groups = {};
+    state.transactions.forEach(function(t){
+      if(t.source !== 'estratto') return;
+      if(t.importId && known[t.importId]){ known[t.importId].count++; return; }
+      var acc = stmtTxAccount(t) || '?';
+      var k = (t.createdAt || '') + '|' + acc;
+      var g = groups[k] || (groups[k] = { id: 'legacy-' + k, file: null, account: acc, from: t.date, to: t.date, imported: 0, count: 0, at: t.createdAt || '', legacy: true });
+      if(t.date < g.from) g.from = t.date;
+      if(t.date > g.to) g.to = t.date;
+      g.imported++; g.count++;
+    });
+    Object.keys(groups).forEach(function(k){ list.push(groups[k]); });
+    list.sort(function(a, b){ return (a.at || '') < (b.at || '') ? 1 : -1; });
+    return list;
+  }
+  function todayISO(){ var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function addDays(iso, n){ var d = new Date(iso + 'T12:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  /* periodi coperti dagli estratti di un conto e buchi dal 1/1 a oggi */
+  function accountCoverage(name, list){
+    var end = todayISO();
+    var iv = (list || importsList()).filter(function(i){ return i.account === name && i.from && i.to; })
+      .map(function(i){ return [i.from < YEAR_START ? YEAR_START : i.from, i.to > end ? end : i.to]; })
+      .filter(function(p){ return p[0] <= p[1]; })
+      .sort(function(a, b){ return a[0] < b[0] ? -1 : 1; });
+    var merged = [];
+    iv.forEach(function(p){
+      var last = merged[merged.length - 1];
+      if(last && p[0] <= addDays(last[1], 1)){ if(p[1] > last[1]) last[1] = p[1]; }
+      else merged.push([p[0], p[1]]);
+    });
+    var gaps = [], cur = YEAR_START;
+    merged.forEach(function(p){ if(p[0] > cur) gaps.push([cur, addDays(p[0], -1)]); var nx = addDays(p[1], 1); if(nx > cur) cur = nx; });
+    /* l'ultima settimana non conta come buco: l'estratto può non essere ancora disponibile */
+    if(merged.length && cur <= addDays(end, -7)) gaps.push([cur, end]);
+    return { covered: merged, gaps: gaps };
+  }
+  function fmtRange(p){ return fmtDateIt(p[0]) + (p[1] !== p[0] ? '–' + fmtDateIt(p[1]) : ''); }
   function manualTotalPatrimonio(){
     var total = 0;
     ACCOUNTS.forEach(function(a){ total += manualBalance(a); });
@@ -1009,14 +1179,129 @@
     });
   }
 
+  /* ---------- ricerca e filtri dei movimenti ---------- */
+  var txF = { q: '', from: '', to: '', cat: '', type: '', acc: '', noteOnly: false };
+  function txNorm(x){ return String(x == null ? '' : x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+  function txFilterActive(){ return !!(txF.q || txF.from || txF.to || txF.cat || txF.type || txF.acc); }
+  function txKind(t){ return t.type === 'transfer' ? 'transfer' : (t.type === 'expense' && (t.refund || t.amount < 0)) ? 'refund' : t.type; }
+  function txMatches(t){
+    if(txF.from && t.date < txF.from) return false;
+    if(txF.to && t.date > txF.to) return false;
+    if(txF.cat && t.category !== txF.cat) return false;
+    if(txF.type && txKind(t) !== txF.type) return false;
+    if(txF.acc && t.account !== txF.acc && t.toAccount !== txF.acc) return false;
+    if(txF.q){
+      var amt = Math.abs(t.type === 'expense' ? t.personalAmount : t.amount);
+      var hay = txF.noteOnly ? txNorm(t.note) :
+        txNorm([t.note, t.category, t.account, t.toAccount, fmtDateIt(t.date), t.date, amt.toFixed(2), amt.toFixed(2).replace('.', ','), fmtEUR(amt), t.recurringId ? 'ricorrente' : '', t.refund ? 'rimborso' : '', t.isShared ? 'condivisa' : ''].join(' '));
+      var words = txNorm(txF.q).split(/\s+/).filter(Boolean);
+      for(var i = 0; i < words.length; i++) if(hay.indexOf(words[i]) < 0) return false;
+    }
+    return true;
+  }
+  function txHighlight(text){
+    var safe = escapeHtml(text);
+    if(!txF.q) return safe;
+    var words = txF.q.trim().split(/\s+/).filter(function(w){ return w.length > 1; })
+      .map(function(w){ return escapeHtml(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); });
+    if(!words.length) return safe;
+    try{ return safe.replace(new RegExp('(' + words.join('|') + ')', 'gi'), '<mark class="tx-hit">$1</mark>'); }
+    catch(e){ return safe; }
+  }
+  function txFillFilterSelects(){
+    var catSel = document.getElementById('txCat'), accSel = document.getElementById('txAcc');
+    var used = {};
+    state.transactions.forEach(function(t){ used[t.category] = true; });
+    var cats = EXPENSE_CATEGORIES.concat(INCOME_CATEGORIES, ['Giroconto', 'Ricarica conto esterno']);
+    Object.keys(used).forEach(function(c){ if(c && cats.indexOf(c) < 0) cats.push(c); });
+    var opt = function(v, l, sel){ return '<option value="' + escapeHtml(v) + '"' + (sel ? ' selected' : '') + '>' + escapeHtml(l) + '</option>'; };
+    catSel.innerHTML = opt('', 'Tutte', !txF.cat) +
+      '<optgroup label="Spese">' + EXPENSE_CATEGORIES.map(function(c){ return opt(c, c, c === txF.cat); }).join('') + '</optgroup>' +
+      '<optgroup label="Entrate">' + INCOME_CATEGORIES.map(function(c){ return opt(c, c, c === txF.cat); }).join('') + '</optgroup>' +
+      '<optgroup label="Altro">' + cats.slice(EXPENSE_CATEGORIES.length + INCOME_CATEGORIES.length).map(function(c){ return opt(c, c, c === txF.cat); }).join('') + '</optgroup>';
+    accSel.innerHTML = opt('', 'Tutti', !txF.acc) + ACCOUNTS.map(function(a){ return opt(a, a, a === txF.acc); }).join('');
+  }
+  function txReadFilters(){
+    txF.q = document.getElementById('txQuery').value.trim();
+    txF.from = document.getElementById('txFrom').value;
+    txF.to = document.getElementById('txTo').value;
+    txF.cat = document.getElementById('txCat').value;
+    txF.type = document.getElementById('txType').value;
+    txF.acc = document.getElementById('txAcc').value;
+    txF.noteOnly = document.getElementById('txNoteOnly').value === '1';
+  }
+  function txUpdateToggle(){
+    var n = [txF.from || txF.to, txF.cat, txF.type, txF.acc, txF.noteOnly].filter(Boolean).length;
+    var btn = document.getElementById('txFilterToggle');
+    btn.textContent = n ? 'Filtri · ' + n : 'Filtri';
+    btn.classList.toggle('on', !!n);
+  }
+  function txSetPeriod(p){
+    var d = new Date(), y = d.getFullYear(), m = d.getMonth();
+    var iso = function(dt){ return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate()); };
+    var from, to;
+    if(p === 'month'){ from = new Date(y, m, 1); to = new Date(y, m + 1, 0); }
+    else if(p === 'prev'){ from = new Date(y, m - 1, 1); to = new Date(y, m, 0); }
+    else if(p === '3m'){ from = new Date(y, m - 2, 1); to = new Date(y, m + 1, 0); }
+    else { from = new Date(y, 0, 1); to = new Date(y, 11, 31); }
+    document.getElementById('txFrom').value = iso(from);
+    document.getElementById('txTo').value = iso(to);
+    txApply();
+  }
+  var txTimer = null;
+  function txApply(){ txReadFilters(); txUpdateToggle(); renderTransactions(); }
+  function txResetFilters(){
+    ['txQuery', 'txFrom', 'txTo', 'txCat', 'txType', 'txAcc', 'txNoteOnly'].forEach(function(id){ document.getElementById(id).value = ''; });
+    txApply();
+  }
+  function initTxSearch(){
+    txFillFilterSelects();
+    document.getElementById('txQuery').addEventListener('input', function(){ clearTimeout(txTimer); txTimer = setTimeout(txApply, 150); });
+    ['txFrom', 'txTo', 'txCat', 'txType', 'txAcc', 'txNoteOnly'].forEach(function(id){ document.getElementById(id).addEventListener('change', txApply); });
+    document.getElementById('txFilterToggle').addEventListener('click', function(){
+      var box = document.getElementById('txFilters');
+      box.hidden = !box.hidden;
+      this.setAttribute('aria-expanded', String(!box.hidden));
+    });
+    document.getElementById('txPeriods').addEventListener('click', function(e){
+      var p = e.target.getAttribute && e.target.getAttribute('data-p');
+      if(p) txSetPeriod(p);
+    });
+    document.getElementById('txSummary').addEventListener('click', function(e){ if(e.target.tagName === 'BUTTON') txResetFilters(); });
+  }
+
   function renderTransactions(){
     var listEl = document.getElementById('txList');
+    var sumEl = document.getElementById('txSummary');
+    if(document.getElementById('txCat').options.length === 0 || document.getElementById('txCat').dataset.n !== String(state.transactions.length)){
+      txFillFilterSelects(); document.getElementById('txCat').dataset.n = String(state.transactions.length);
+    }
     if(state.transactions.length === 0){
       listEl.innerHTML = '<div class="empty-state">Nessun movimento ancora.<br>Aggiungi la tua prima spesa o entrata.</div>';
+      sumEl.hidden = true;
       return;
     }
+    var filtering = txFilterActive();
+    var shown = filtering ? state.transactions.filter(txMatches) : state.transactions;
+    if(filtering){
+      var sIn = 0, sOut = 0, sRef = 0;
+      shown.forEach(function(t){
+        if(t.type === 'income') sIn += t.amount;
+        else if(t.type === 'expense'){ if(t.personalAmount < 0) sRef -= t.personalAmount; else sOut += t.personalAmount; }
+      });
+      sumEl.hidden = false;
+      sumEl.innerHTML = '<span><b>' + shown.length + '</b> ' + (shown.length === 1 ? 'movimento' : 'movimenti') + '</span>' +
+        (sOut ? '<span>uscite <b class="out">−' + fmtEUR(sOut) + '</b></span>' : '') +
+        (sIn ? '<span>entrate <b class="inc">+' + fmtEUR(sIn) + '</b></span>' : '') +
+        (sRef ? '<span>rimborsi <b class="inc">+' + fmtEUR(sRef) + '</b></span>' : '') +
+        '<button type="button">Azzera</button>';
+      if(!shown.length){
+        listEl.innerHTML = '<div class="empty-state">Nessun movimento corrisponde alla ricerca.</div>';
+        return;
+      }
+    } else sumEl.hidden = true;
     var groups = {};
-    state.transactions.forEach(function(t){
+    shown.forEach(function(t){
       var key = t.date.slice(0,7);
       if(!groups[key]) groups[key] = [];
       groups[key].push(t);
@@ -1027,6 +1312,11 @@
       var label = document.createElement('div');
       label.className = 'tx-month-label';
       label.textContent = monthLabel(key);
+      if(filtering){
+        var mOut = 0;
+        groups[key].forEach(function(t){ if(t.type === 'expense') mOut += t.personalAmount; });
+        if(mOut){ var ms = document.createElement('span'); ms.className = 'tx-month-sum'; ms.textContent = '−' + fmtEUR(mOut); label.appendChild(ms); }
+      }
       listEl.appendChild(label);
 
       var items = groups[key].slice().sort(function(a,b){
@@ -1051,7 +1341,7 @@
           subExtra = ' · totale '+fmtEUR(t.amount);
         }
         var accountText = t.account ? (' · ' + t.account + (t.type === 'transfer' && t.toAccount ? ' → ' + t.toAccount : '')) : '';
-        var noteLine = t.note ? '<div class="tx-note">'+escapeHtml(t.note)+'</div>' : '';
+        var noteLine = t.note ? '<div class="tx-note">'+txHighlight(t.note)+'</div>' : '';
         row.innerHTML =
           '<div class="tx-top">' +
             '<span class="tx-cat"><span class="cat-dot" style="background:'+color+'"></span><span>'+t.category+'</span></span>' +
@@ -1164,28 +1454,53 @@
     var ok = Math.abs(diff) < 0.005;
     return '<span class="acc-diff ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓ coincide' : 'diff. ' + (diff > 0 ? '+' : '') + fmtEUR(diff)) + '</span>';
   }
+  function signedEUR(x){ return (x > 0.004 ? '+' : x < -0.004 ? '−' : '') + fmtEUR(Math.abs(x)); }
   function renderAccounts(){
-    var manTot = manualTotalPatrimonio(), calcTot = computeTotalPatrimonio();
+    var manTot = manualTotalPatrimonio();
+    var imports = importsList();
     document.getElementById('patrimonioTotalVal').textContent = fmtEUR(manTot);
-    document.getElementById('patrimonioCompare').innerHTML = '<span>calcolato ' + fmtEUR(calcTot) + '</span>' + diffHtml(calcTot - manTot);
+    var tot = { inc: 0, out: 0, ext: 0, open: 0, implied: 0, unknown: 0, calcKnown: 0, manKnown: 0, nKnown: 0 };
     var list = document.getElementById('accountsList');
     list.innerHTML = '';
     ACCOUNTS.forEach(function(a){
       var m = manualRecord(a);
-      var bal = m.value, calc = computeAccountBalance(a);
+      var bal = m.value;
+      var o = openingRecord(a), imp = impliedOpening(a);
+      var f = accountFlows(a), mov = accountMovements(a), calc = computeAccountBalance(a);
+      var cov = accountCoverage(a, imports);
+      tot.inc += f.inc; tot.out += f.out; tot.ext += f.tin - f.tout;
+      if(o){ tot.open += o.value; tot.calcKnown += calc; tot.manKnown += bal; tot.nKnown++; }
+      else if(imp != null){ tot.open += imp; tot.implied++; }
+      else tot.unknown++;
+      var lines = [];
+      lines.push('<span><b>1/1/2026</b> ' + (o ? fmtEUR(o.value) + ' <i>' + (o.source === 'estratto' ? 'da estratto' : 'scritto da te') + '</i>'
+        : '? <i>non noto</i>' + (imp != null ? ' · per tornare col tuo saldo servirebbe <b class="' + (imp < -0.005 ? 'neg' : '') + '">' + fmtEUR(imp) + '</b>' : '')) + '</span>');
+      if(f.n) lines.push('<span>dal 1/1: entrate ' + signedEUR(f.inc) + ' · uscite ' + signedEUR(-f.out) + ((f.tin || f.tout) ? ' · giroconti ' + signedEUR(f.tin - f.tout) : '') + ' = ' + signedEUR(mov) + '</span>');
+      else lines.push('<span>nessun movimento dal 1/1</span>');
+      if(calc != null) lines.push('<span>calcolato oggi <b>' + fmtEUR(calc) + '</b> ' + diffHtml(calc - bal) + '</span>');
+      if(imp != null && imp < -0.005 && !o) lines.push('<span class="acc-warn">Un saldo iniziale negativo è impossibile: mancano entrate o giroconti in arrivo, oppure ci sono uscite doppie.</span>');
+      lines.push('<span>estratti: ' + (cov.covered.length ? cov.covered.map(fmtRange).join(', ') : 'nessuno') + '</span>');
+      if(cov.covered.length && cov.gaps.length && a !== 'Contanti' && a !== 'RevPoints') lines.push('<span class="acc-warn">senza estratto: ' + cov.gaps.map(fmtRange).join(', ') + '</span>');
       var row = document.createElement('div');
-      row.className = 'account-item';
+      row.className = 'account-item acc-card';
       row.innerHTML =
         '<span class="account-name">'+a+'</span>' +
         '<div style="display:flex;align-items:center;gap:12px;">' +
           '<div class="acc-right">' +
             '<span class="account-balance" style="color:'+(bal < 0 ? 'var(--expense)' : 'var(--ink)')+'">'+fmtEUR(bal)+'</span>' +
-            '<span class="acc-sub">' + (m.date > '0000-00-00' ? '<span>al ' + fmtDateIt(m.date) + '</span>' : '') + '<span>calcolato ' + fmtEUR(calc) + '</span>' + diffHtml(calc - bal) + '</span>' +
+            '<span class="acc-sub">' + (m.date > '0000-00-00' ? '<span>scritto da te il ' + fmtDateIt(m.date) + '</span>' : '<span>non inserito</span>') + '</span>' +
           '</div>' +
-          '<button class="edit-btn" data-account="'+a+'" aria-label="Aggiorna saldo di '+a+'">✎</button>' +
-        '</div>';
+          '<button class="edit-btn" data-account="'+a+'" aria-label="Modifica saldi di '+a+'">✎</button>' +
+        '</div>' +
+        '<div class="acc-detail">' + lines.join('') + '</div>';
       list.appendChild(row);
     });
+    var cmp = '<span>dal 1/1/2026: entrate <b class="inc">' + signedEUR(tot.inc) + '</b> · uscite <b class="out">' + signedEUR(-tot.out) + '</b>' +
+      (Math.abs(tot.ext) > 0.004 ? ' · verso conti esterni ' + signedEUR(tot.ext) : '') + ' · netto <b>' + signedEUR(tot.inc - tot.out + tot.ext) + '</b></span>';
+    cmp += '<span>patrimonio al 1/1 ' + (tot.implied || tot.unknown ? 'stimato' : '') + ': <b>' + fmtEUR(tot.open) + '</b>' +
+      (tot.implied ? ' (' + tot.implied + (tot.implied === 1 ? ' conto ricavato' : ' conti ricavati') + ' dal tuo saldo attuale)' : '') + '</span>';
+    if(tot.nKnown) cmp += '<span>sui ' + tot.nKnown + ' conti con saldo al 1/1 noto: calcolato ' + fmtEUR(tot.calcKnown) + ' contro ' + fmtEUR(tot.manKnown) + ' scritti da te ' + diffHtml(tot.calcKnown - tot.manKnown) + '</span>';
+    document.getElementById('patrimonioCompare').innerHTML = cmp;
     list.querySelectorAll('.edit-btn').forEach(function(btn){
       btn.addEventListener('click', function(){ openAccountEdit(btn.getAttribute('data-account')); });
     });
@@ -1193,8 +1508,12 @@
 
   function openAccountEdit(name){
     editingAccount = name;
-    document.getElementById('accountEditTitle').textContent = 'Saldo reale — ' + name;
+    document.getElementById('accountEditTitle').textContent = 'Saldi — ' + name;
     document.getElementById('inputAccountBalance').value = manualBalance(name).toFixed(2);
+    var o = openingRecord(name), imp = impliedOpening(name);
+    document.getElementById('inputAccountOpening').value = o ? o.value.toFixed(2) : '';
+    document.getElementById('accountOpeningHint').textContent = (o && o.source === 'estratto' ? 'Preso dall\'estratto ' + (o.file || '') + '. ' : '') +
+      'Lascia vuoto se non lo sai.' + (imp != null ? ' Con i movimenti registrati, per arrivare al tuo saldo servirebbe ' + fmtEUR(imp) + '.' : '');
     document.getElementById('accountEditOverlay').classList.remove('hidden');
     setTimeout(function(){ document.getElementById('inputAccountBalance').focus(); }, 50);
   }
@@ -1209,8 +1528,18 @@
     var now = new Date();
     state.settings = state.settings || {};
     state.settings.manual = state.settings.manual || {};
-    state.settings.manual[accountName] = { value: Math.round(val * 100) / 100,
-      date: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()), at: now.toISOString() };
+    var openTxt = document.getElementById('inputAccountOpening').value.trim();
+    var openVal = openTxt === '' ? null : parseFloat(openTxt.replace(',', '.'));
+    if(openTxt !== '' && isNaN(openVal)){ showToast('Saldo al 1° gennaio non valido.'); return; }
+    /* il saldo scritto da te cambia (con la data di oggi) solo se l'hai modificato */
+    if(Math.abs(r2(val) - manualBalance(accountName)) > 0.004 || !state.settings.manual[accountName]){
+      state.settings.manual[accountName] = { value: r2(val),
+        date: now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()), at: now.toISOString() };
+    }
+    state.settings.opening = state.settings.opening || {};
+    var prevO = openingRecord(accountName);
+    if(openVal == null) delete state.settings.opening[accountName];
+    else if(!prevO || Math.abs(prevO.value - openVal) > 0.004) state.settings.opening[accountName] = { value: r2(openVal), source: 'manuale', at: now.toISOString() };
     await saveAccounts();
     closeAccountEdit();
     renderAll();
@@ -1225,6 +1554,7 @@
     if(!chartsPage.classList.contains('hidden')) renderCharts();
     var patPage = document.getElementById('page-patrimonio');
     if(!patPage.classList.contains('hidden')) renderAccounts();
+    if(!document.getElementById('page-estratti').classList.contains('hidden')) renderImports();
   }
 
   /* ---------- modal ---------- */
@@ -1372,9 +1702,11 @@
     if(page === 'estratti' && !stmt) document.getElementById('stmtOwner').value = stmtOwnerName();
     if(page === 'charts') renderCharts();
     if(page === 'patrimonio') renderAccounts();
+    if(page === 'estratti') renderImports();
   }
 
   /* ---------- wiring ---------- */
+  initTxSearch();
   document.getElementById('btnAddExpense').addEventListener('click', function(){ openModal('expense'); });
   document.getElementById('btnAddIncome').addEventListener('click', function(){ openModal('income'); });
   document.getElementById('btnCancel').addEventListener('click', closeModal);
@@ -1483,7 +1815,9 @@
     { account:'Amex', re:/american express|\bamex\b/gi },
     { account:'PuPrime', re:/pu\s?prime/gi },
     { account:'Arangio', re:/arangio/gi },
-    { account:'Buddybank', re:/buddy ?bank|\bbuddy\b/gi }
+    { account:'Buddybank', re:/buddy ?bank|\bbuddy\b/gi },
+    /* solo dal nome del file (es. movimenti_contanti_2026.csv): "contanti" compare anche nei movimenti delle banche */
+    { account:'Contanti', re:/contanti/gi, fileOnly: true }
   ];
   var CARD_ACCOUNTS = { 'Amex': true };
 
@@ -1498,6 +1832,7 @@
     /* la banca è quella nominata per prima nella prima pagina (intestazione) */
     var best = null, bestIdx = Infinity, bestAll = 0;
     BANK_PATTERNS.forEach(function(b){
+      if(b.fileOnly) return;
       var m = new RegExp(b.re.source, 'i').exec(firstPageText);
       var all = (fullText.match(b.re) || []).length;
       var idx = m ? m.index : Infinity;
@@ -2082,6 +2417,35 @@
     el.classList.toggle('err', !!isErr);
   }
 
+  /* elenco degli estratti caricati e copertura per conto */
+  function renderImports(){
+    var box = document.getElementById('stmtImportsList');
+    if(!box) return;
+    var list = importsList();
+    var html = '<div class="imp-cov">';
+    ACCOUNTS.forEach(function(a){
+      if(a === 'RevPoints' || a === 'Contanti') return;
+      var cov = accountCoverage(a, list);
+      html += '<div class="imp-cov-row"><b>' + escapeHtml(a) + '</b><span>' +
+        (cov.covered.length ? cov.covered.map(fmtRange).join(', ') : '<span class="imp-none">nessun estratto</span>') +
+        (cov.covered.length && cov.gaps.length ? ' <span class="imp-gap">· manca ' + cov.gaps.map(fmtRange).join(', ') + '</span>' : '') + '</span></div>';
+    });
+    html += '</div>';
+    if(!list.length) html += '<p class="hint">Nessun estratto caricato.</p>';
+    list.forEach(function(i){
+      var facts = [];
+      if(i.from) facts.push(fmtRange([i.from, i.to || i.from]));
+      facts.push((i.count != null ? i.count : i.imported) + ' movimenti nel registro' + (i.dups ? ' · ' + i.dups + ' righe del file erano già nel registro' : ''));
+      if(!i.legacy && (i.inSum || i.outSum)) facts.push('entrate +' + fmtEUR(i.inSum || 0) + ' · uscite −' + fmtEUR(i.outSum || 0));
+      if(i.opening != null || i.closing != null) facts.push('saldo ' + (i.opening != null ? fmtEUR(i.opening) : '?') + ' → ' + (i.closing != null ? fmtEUR(i.closing) : '?'));
+      html += '<div class="imp-item"><div class="imp-top"><span class="imp-file">' + (i.file ? escapeHtml(i.file) : 'file senza nome (importato prima dell\'elenco)') + '</span>' +
+        '<span class="imp-acc">' + escapeHtml(i.account || '?') + '</span></div>' +
+        '<div class="imp-facts">' + facts.map(function(x){ return '<span>' + x + '</span>'; }).join('') + '</div>' +
+        '<div class="imp-at">caricato il ' + (i.at ? fmtDateIt(i.at.slice(0, 10)) : '?') + '</div></div>';
+    });
+    box.innerHTML = html;
+  }
+
   function stmtReset(){
     stmt = null; stmtFile = null;
     document.getElementById('stmtResult').hidden = true;
@@ -2091,7 +2455,9 @@
     document.getElementById('stmtOwnerBox').hidden = false;
     document.getElementById('stmtOwner').value = stmtOwnerName();
     document.getElementById('askOverlay').classList.add('hidden');
+    document.getElementById('stmtImportsBox').hidden = false;
     stmtSetStatus('');
+    renderImports();
   }
 
   function stmtHandleFile(file){
@@ -2172,6 +2538,7 @@
     document.getElementById('stmtDrop').hidden = true;
     document.getElementById('stmtOwnerBox').hidden = true;
     document.getElementById('stmtResult').hidden = false;
+    document.getElementById('stmtImportsBox').hidden = true;
     stmtRender();
     if(stmtUnresolved().length) stmtAskNext();
   }
@@ -2513,12 +2880,15 @@
     if(!stmt.account){ prev.textContent = 'Scegli il conto per vedere come cambia il saldo.'; }
     else {
       var m = manualRecord(stmt.account);
-      var now = computeAccountBalance(stmt.account);
+      var o = openingRecord(stmt.account), so = stmtOpeningAtYearStart();
       var after = stmtBalanceAfter();
-      prev.innerHTML = 'Saldo di ' + escapeHtml(acc) + ' scritto da te: <b>' + fmtEUR(m.value) + '</b>' + (m.date > '0000-00-00' ? ' (' + fmtDateIt(m.date) + ')' : '') +
-        ' · calcolato: <b>' + fmtEUR(now) + '</b> → dopo l\'importazione: <b>' + fmtEUR(after) + '</b>.' +
-        (m.date > '0000-00-00' ? ' I movimenti fino al ' + fmtDateIt(m.date) + ' sono già compresi nel saldo che hai scritto e non lo cambiano.' : '') +
-        (stmt.closing != null ? ' Saldo finale dell\'estratto: ' + fmtEUR(stmt.closing) + (stmt.closingDate ? ' al ' + fmtDateIt(stmt.closingDate) : '') + '.' : '');
+      var txt = 'Saldo di ' + escapeHtml(acc) + ' scritto da te: <b>' + fmtEUR(m.value) + '</b>' + (m.date > '0000-00-00' ? ' (' + fmtDateIt(m.date) + ')' : '') + '. ';
+      if(so != null && (!o || o.source === 'estratto')) txt += 'Dall\'estratto prendo il saldo al 1/1/2026: <b>' + fmtEUR(so) + '</b>. ';
+      else if(o) txt += 'Saldo al 1/1/2026: <b>' + fmtEUR(o.value) + '</b>' + (o.source === 'estratto' ? ' (da estratto)' : ' (scritto da te)') + '. ';
+      else txt += 'Il saldo al 1/1/2026 non è noto (l\'estratto non parte da gennaio), quindi non calcolo il saldo: puoi scriverlo con ✎ in Patrimonio. ';
+      if(after != null) txt += 'Calcolato dopo l\'importazione: <b>' + fmtEUR(after) + '</b>. ';
+      if(stmt.closing != null) txt += 'Saldo finale dell\'estratto: ' + fmtEUR(stmt.closing) + (stmt.closingDate ? ' al ' + fmtDateIt(stmt.closingDate) : '') + '.';
+      prev.innerHTML = txt;
     }
     var un = stmtUnresolved().length;
     var banner = document.getElementById('stmtAskBanner');
@@ -2526,7 +2896,7 @@
     document.getElementById('stmtAskText').textContent = un === 1 ? 'Ho un dubbio su un movimento: dimmi tu che cos\'è.' : 'Ho un dubbio su ' + un + ' movimenti: dimmi tu che cosa sono.';
     var btn = document.getElementById('stmtImport');
     btn.textContent = un ? 'Rispondi a ' + un + (un === 1 ? ' dubbio' : ' dubbi') :
-      (inc.length ? 'Importa ' + inc.length + (inc.length === 1 ? ' movimento' : ' movimenti') : (stmt.align ? 'Aggiorna solo il saldo' : 'Importa'));
+      (inc.length ? 'Importa ' + inc.length + (inc.length === 1 ? ' movimento' : ' movimenti') : 'Registra l\'estratto (nessun movimento nuovo)');
   }
 
   function stmtClosingValue(){
@@ -2534,20 +2904,28 @@
     return isNaN(v) ? null : v;
   }
 
-  /* saldo del conto dopo l'importazione */
+  /* saldo al 1/1/2026 ricavato dall'estratto, se l'estratto parte da inizio anno (o prima) */
+  function stmtOpeningAtYearStart(){
+    if(stmt.opening == null || !stmt.from || stmt.from > '2026-01-15') return null;
+    var pre = stmt.rows.filter(function(r){ return r.date < YEAR_START; });
+    return r2(stmt.opening + stmtNet(pre));
+  }
+  /* saldo calcolato del conto dopo l'importazione (null se il saldo al 1/1 non è noto) */
   function stmtBalanceAfter(){
     var acc = stmt.account;
-    var m = manualRecord(acc);
-    var newRows = stmt.rows.filter(function(r){ return r.include && r.date >= m.date; });
-    var closing = stmtClosingValue();
-    if(stmt.align && closing != null){
-      var cutoff = stmt.closingDate || stmt.to || '9999-12-31';
-      var later = 0;
-      state.transactions.forEach(function(t){ if(t.date > cutoff) later += txAccountEffect(t, acc); });
-      newRows.forEach(function(r){ if(r.date > cutoff) later += r.type === 'income' ? r.amount : -r.amount; });
-      return closing + later;
+    var o = openingRecord(acc), so = stmtOpeningAtYearStart();
+    var open = (so != null && (!o || o.source === 'estratto')) ? so : (o ? o.value : null);
+    if(open == null) return null;
+    var newRows = stmt.rows.filter(function(r){ return r.include && r.date >= YEAR_START && !(r.transfer && !r.toAccount && !r.external); });
+    return r2(open + accountMovements(acc) + stmtNet(newRows));
+  }
+  function stmtFindImport(acc){
+    var list = (state.settings && state.settings.imports) || [];
+    for(var i = 0; i < list.length; i++){
+      var x = list[i];
+      if(x.file === stmt.fileName && x.account === acc && x.from === stmt.from && x.to === stmt.to) return x;
     }
-    return computeAccountBalance(acc) + stmtNet(newRows);
+    return null;
   }
 
   async function stmtImport(){
@@ -2558,17 +2936,33 @@
     var closing = stmtClosingValue();
     var doAlign = stmt.align && closing != null;
     if(stmt.align && closing == null){ err.textContent = 'Inserisci il saldo finale dell\'estratto, oppure disattiva l\'allineamento.'; err.style.display = 'block'; return; }
-    if(!rows.length && !doAlign){ err.textContent = 'Non hai selezionato nessun movimento.'; err.style.display = 'block'; return; }
+    /* anche senza movimenti nuovi l'estratto viene registrato (periodo coperto, saldo iniziale) */
     if(stmtUnresolved().length){ stmt.skipped = {}; stmtAskNext(); return; }
 
     var acc = stmt.account;
     var now = new Date().toISOString();
+    state.settings = state.settings || {};
+    state.settings.imports = state.settings.imports || [];
+    var prevImp = stmtFindImport(acc);
+    var tIn = 0, tOut = 0;
+    rows.forEach(function(r){ if(r.transfer) return; if(r.type === 'income' && !r.refund) tIn += r.amount; else tOut += (r.type === 'income' ? -r.amount : r.amount); });
+    var imp = { id: prevImp ? prevImp.id : uid(), file: stmt.fileName, bank: stmt.bankDetected || null, account: acc,
+      from: stmt.from || null, to: stmt.to || null, rows: stmt.rows.length, imported: rows.length + (prevImp ? prevImp.imported || 0 : 0),
+      dups: stmt.rows.filter(function(r){ return r.dup; }).length, inSum: r2(tIn), outSum: r2(tOut),
+      opening: stmt.opening, closing: stmt.closing, closingDate: stmt.closingDate || null, at: now };
+    if(prevImp) state.settings.imports.splice(state.settings.imports.indexOf(prevImp), 1);
+    state.settings.imports.push(imp);
+    var so = stmtOpeningAtYearStart(), curO = openingRecord(acc);
+    if(so != null && (!curO || curO.source === 'estratto')){
+      state.settings.opening = state.settings.opening || {};
+      state.settings.opening[acc] = { value: so, source: 'estratto', file: stmt.fileName, at: now };
+    }
     rows.forEach(function(r){
       var tx = {
         id: uid(), type: r.type, amount: r.amount, personalAmount: r.amount,
         category: r.category, date: r.date, account: acc,
         isShared: false, peopleCount: null, recurringId: null,
-        note: r.desc.slice(0, 140), source: 'estratto', stmtType: r.type, createdAt: now
+        note: r.desc.slice(0, 140), source: 'estratto', stmtType: r.type, createdAt: now, importId: imp.id
       };
       if(r.transfer && (r.toAccount || r.external)){
         /* giroconto verso/da un sottoconto (es. spiccioli RevPoints): sposta soldi, non è spesa né entrata */
@@ -2593,11 +2987,13 @@
       state.accounts[acc] = closing - sumUpTo;
       await saveAccounts();
     }
+    await saveAccounts();
     await saveTransactions();
     finalBal = computeAccountBalance(acc);
     renderAll();
     stmtReset();
-    showToast((rows.length ? 'Importati ' + rows.length + ' movimenti su ' + acc + '. ' : '') + 'Saldo ' + acc + ': ' + fmtEUR(finalBal) + '.');
+    showToast((rows.length ? 'Importati ' + rows.length + ' movimenti su ' + acc + '. ' : 'Estratto registrato, nessun movimento nuovo. ') +
+      (finalBal != null ? 'Saldo calcolato ' + acc + ': ' + fmtEUR(finalBal) + '.' : 'Saldo al 1/1 di ' + acc + ' non noto.'));
   }
 
   document.getElementById('stmtFileInput').addEventListener('change', function(e){
